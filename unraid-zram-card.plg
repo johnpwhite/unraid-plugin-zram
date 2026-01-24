@@ -2,16 +2,20 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "unraid-zram-card">
 <!ENTITY author    "John White">
-<!ENTITY version   "2026.01.25.15">
+<!ENTITY version   "2026.01.25.16">
 <!ENTITY launch    "Settings/UnraidZramCard">
 <!ENTITY pluginURL "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/unraid-zram-card.plg">
 <!ENTITY gitURL    "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master">
-<!ENTITY boot      "/boot/config/plugins/&name;">
-<!ENTITY emhttp    "/usr/local/emhttp/plugins/&name;">
+<!ENTITY support   "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/src/unraid-zram-card/HELP.md">
+<!ENTITY boot      "/boot/config/plugins/unraid-zram-card">
+<!ENTITY emhttp    "/usr/local/emhttp/plugins/unraid-zram-card">
 ]>
-<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0" support="&gitURL;/src/unraid-zram-card/HELP.md">
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0" support="&support;">
 
 <CHANGES>
+## 2026.01.25.16
+- Fix: Removed all recursive XML entities (e.g., &name; inside other entities) to satisfy Unraid's strict/simple parser.
+- Fix: Hardcoded paths for boot and emhttp variables.
 ## 2026.01.25.15
 - Fix: Flattened XML entities in .plg file to resolve 'XML parse error' during installation.
 ## 2026.01.25.14
