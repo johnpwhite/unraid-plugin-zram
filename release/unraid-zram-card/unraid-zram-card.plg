@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "unraid-zram-card">
 <!ENTITY author    "John White">
-<!ENTITY version   "2026.01.24.6">
+<!ENTITY version   "2026.01.24.7">
 <!ENTITY launch    "Settings/UnraidZramCard">
 <!ENTITY gitURL    "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master">
 <!ENTITY pluginURL "&gitURL;/unraid-zram-card.plg">
@@ -12,6 +12,8 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0" support="&gitURL;/src/unraid-zram-card/HELP.md">
 
 <CHANGES>
+## 2026.01.24.7
+- Fix: Added robust pre-install cleanup to prevent 'file already exists' errors during update.
 ## 2026.01.24.6
 - Fix: Uninstall script now uses explicit paths and updates plugin cache to ensure removal of UI elements.
 - Fix: Formatting of description using double newlines.
@@ -29,14 +31,19 @@
 - Fix: Switched to direct URL downloads for network installation.
 </CHANGES>
 
-<!-- 1. PRE-INSTALL -->
-<INSTALL Script="pre-install.sh">
+<!-- 1. PRE-INSTALL CLEANUP (Must use FILE Run to execute before other downloads) -->
+<FILE Run="/bin/bash">
+<INLINE>
 #!/bin/bash
-# Remove old installation
-rm -rf &emhttp;
-mkdir -p &emhttp;/js
-echo "Cleaning up old installation..."
-</INSTALL>
+# Clean up existing files to force a fresh download
+PLUGIN_DIR="/usr/local/emhttp/plugins/unraid-zram-card"
+if [ -d "$PLUGIN_DIR" ]; then
+    rm -rf "$PLUGIN_DIR"
+fi
+mkdir -p "$PLUGIN_DIR/js"
+echo "Pre-install cleanup complete."
+</INLINE>
+</FILE>
 
 <!-- 2. DEFINE FILES (Download directly from GitLab) -->
 

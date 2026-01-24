@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "unraid-zram-card">
 <!ENTITY author    "John White">
-<!ENTITY version   "2026.01.24.6">
+<!ENTITY version   "2026.01.25.2">
 <!ENTITY launch    "Settings/UnraidZramCard">
 <!ENTITY pluginURL "/boot/config/plugins/&name;/unraid-zram-card-local.plg">
 <!ENTITY boot      "/boot/config/plugins/&name;">
@@ -11,19 +11,37 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0" support="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/src/unraid-zram-card/HELP.md">
 
 <CHANGES>
+## 2026.01.25.2
+- Fix: Dashboard card now correctly uses the $mytiles variable for proper rendering.
+- Fix: Updated Settings icon to a standard FontAwesome icon.
+## 2026.01.25.1
+- Fix: Ensure pre-install cleanup runs by assigning a Name attribute.
+- Fix: Added missing UnraidZramDash.page to local install.
+## 2026.01.24.7
+- Fix: Added robust pre-install cleanup.
+## 2026.01.24.6
+- Finalized author and support metadata.
 ## 2026.01.24.4
 - Finalized author and support metadata.
 ## 2026.01.24.3
+- Fix: Settings 'enabled' toggle not saving correctly.
+- Fix: Reduced dashboard card size to fit better.
 ## 2026.01.24
 - Initial Release: Local Install Version
 </CHANGES>
 
-<!-- 1. PRE-INSTALL -->
-<INSTALL Script="pre-install.sh">
+<!-- 1. PRE-INSTALL CLEANUP -->
+<FILE Run="/bin/bash" Name="/tmp/unraid-zram-card-cleanup">
+<INLINE>
 #!/bin/bash
-rm -rf &emhttp;
-echo "Cleaning up old installation..."
-</INSTALL>
+PLUGIN_DIR="/usr/local/emhttp/plugins/unraid-zram-card"
+if [ -d "$PLUGIN_DIR" ]; then
+    rm -rf "$PLUGIN_DIR"
+fi
+mkdir -p "$PLUGIN_DIR/js"
+echo "Pre-install cleanup complete."
+</INLINE>
+</FILE>
 
 <!-- 2. DEFINE FILES (Using LOCAL source from USB) -->
 
@@ -37,6 +55,10 @@ echo "Cleaning up old installation..."
 
 <FILE Name="&emhttp;/UnraidZramCard.page">
 <LOCAL>&boot;/UnraidZramCard.page</LOCAL>
+</FILE>
+
+<FILE Name="&emhttp;/UnraidZramDash.page">
+<LOCAL>&boot;/UnraidZramDash.page</LOCAL>
 </FILE>
 
 <FILE Name="&emhttp;/js/zram-card.js">

@@ -208,6 +208,38 @@ Plugins should download assets to the USB drive (persistent) and then install to
 </FILE>
 ```
 
+#### Robust Installation & Cleanup
+To avoid "skipping: file already exists" errors during updates and ensure clean uninstalls, you must handle cleanup in **two** places.
+
+**1. Pre-Install Cleanup (Updates):**
+Unraid does not automatically remove old files when updating a plugin. If you try to overwrite existing files, the installer may skip them. You must force a cleanup **before** any files are downloaded/installed.
+*   **Crucial:** You must assign a `Name` attribute (e.g., `Name="/tmp/cleanup"`) to the `<FILE>` tag containing your script. If you omit this, the plugin manager might ignore the script or fail to execute it at the right time.
+
+```xml
+<!-- Run this FIRST, before other FILE tags -->
+<FILE Run="/bin/bash" Name="/tmp/plugin-cleanup">
+<INLINE>
+#!/bin/bash
+# Remove existing plugin directory to ensure a clean slate for the update
+rm -rf /usr/local/emhttp/plugins/&name;
+echo "Cleanup complete."
+</INLINE>
+</FILE>
+```
+
+**2. Uninstall Cleanup (Removal):**
+The `<REMOVE>` script runs when the user explicitly uninstalls the plugin. Since the pre-install script doesn't run here, you **must duplicate** the cleanup logic.
+
+```xml
+<REMOVE Script="remove.sh">
+#!/bin/bash
+removepkg &name;-&version;
+# DUPLICATE CLEANUP HERE
+rm -rf /usr/local/emhttp/plugins/&name;
+/etc/rc.d/rc.nginx reload
+</REMOVE>
+```
+
 #### Event Hooks & Lifecycle
 *   **Source of Truth**: The file `/usr/local/sbin/emhttp_event` on Unraid lists all available system events (e.g., `starting`, `started`, `stopping`, `disks_mounted`).
 *   **Implementation**: To hook an event, plugins typically install a script into a specific event directory or register via a command. Inspecting standard plugins like `dynamix` is the best documentation here.

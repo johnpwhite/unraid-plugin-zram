@@ -1,6 +1,6 @@
 Menu="Settings/Utilities"
 Title="Unraid ZRAM Card"
-Icon="server"
+Icon="fa-database"
 ---
 <?php
 // Configuration File Path

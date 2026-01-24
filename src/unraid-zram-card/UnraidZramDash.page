@@ -2,6 +2,21 @@ Menu="Dashboard"
 Icon="server"
 ---
 <?php
-// Include the actual card logic
-include '/usr/local/emhttp/plugins/unraid-zram-card/ZramCard.php';
+try {
+    // Determine docroot (handle different Unraid versions/environments)
+    $docroot = $docroot ?? $_SERVER['DOCUMENT_ROOT'] ?: '/usr/local/emhttp';
+
+    // Start output buffering to capture the HTML from ZramCard.php
+    ob_start();
+    include "{$docroot}/plugins/unraid-zram-card/ZramCard.php";
+    $cardContent = ob_get_clean();
+
+    // Assign to the dashboard tiles array
+    // 'column2' is a standard default; Unraid's grid system handles placement.
+    $mytiles['unraid-zram-card']['column2'] = $cardContent;
+
+} catch (Throwable $e) {
+    // Fallback error display
+    $mytiles['unraid-zram-card']['column2'] = '<tbody title="Unraid ZRAM Card"><tr><td>Error loading ZRAM Card: ' . htmlspecialchars($e->getMessage()) . '</td></tr></tbody>';
+}
 ?>
