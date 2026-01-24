@@ -12,10 +12,13 @@ try {
     $cardContent = ob_get_clean();
 
     // Assign to the dashboard tiles array
-    // 'column2' is a standard default; Unraid's grid system handles placement.
     $mytiles['unraid-zram-card']['column2'] = $cardContent;
 
 } catch (Throwable $e) {
+    // Clear the buffer if it's still open to prevent breaking the dashboard
+    if (ob_get_level() > 0) {
+        ob_end_clean();
+    }
     // Fallback error display
     $mytiles['unraid-zram-card']['column2'] = '<tbody title="Unraid ZRAM Card"><tr><td>Error loading ZRAM Card: ' . htmlspecialchars($e->getMessage()) . '</td></tr></tbody>';
 }
