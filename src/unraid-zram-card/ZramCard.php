@@ -37,17 +37,7 @@ if (!function_exists('getZramDashboardCard')) {
 
         $zram_cardId = 'zram-dashboard-card';
 ?>
-<!-- CSS Scoped by ID -->
-<style>
-#<?php echo $zram_cardId; ?> .zram-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 10px; }
-#<?php echo $zram_cardId; ?> .zram-stat-item { background-color: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 4px; text-align: center; }
-#<?php echo $zram_cardId; ?> .zram-stat-value { font-size: 1.2em; font-weight: bold; display: block; }
-#<?php echo $zram_cardId; ?> .zram-stat-label { font-size: 0.8em; opacity: 0.7; }
-#<?php echo $zram_cardId; ?> table { width: 100%; font-size: 0.9em; margin-top: 10px; border-collapse: collapse; }
-#<?php echo $zram_cardId; ?> th { text-align: left; opacity: 0.6; border-bottom: 1px solid rgba(255,255,255,0.1); }
-#<?php echo $zram_cardId; ?> td { padding: 4px 0; }
-</style>
-
+<!-- No Style Block - Inline Styles Only -->
 <tbody title='ZRAM Usage' id='<?php echo $zram_cardId; ?>'>
   <tr>
     <td>
@@ -75,37 +65,47 @@ if (!function_exists('getZramDashboardCard')) {
   <tr>
     <td>
         <div class="zram-content">
-            <!-- Stats Grid -->
-            <div class="zram-stats-grid">
-                <div class="zram-stat-item"><span class="zram-stat-value" id="zram-saved">--</span><span class="zram-stat-label">RAM Saved</span></div>
-                <div class="zram-stat-item"><span class="zram-stat-value" id="zram-ratio">--</span><span class="zram-stat-label">Ratio</span></div>
-                <div class="zram-stat-item"><span class="zram-stat-value" id="zram-used">--</span><span class="zram-stat-label">Actual Used</span></div>
+            <!-- Stats Grid with Inline Styles -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 10px;">
+                <div style="background-color: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 4px; text-align: center;">
+                    <span id="zram-saved" style="font-size: 1.2em; font-weight: bold; display: block;">--</span>
+                    <span style="font-size: 0.8em; opacity: 0.7;">RAM Saved</span>
+                </div>
+                <div style="background-color: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 4px; text-align: center;">
+                    <span id="zram-ratio" style="font-size: 1.2em; font-weight: bold; display: block;">--</span>
+                    <span style="font-size: 0.8em; opacity: 0.7;">Ratio</span>
+                </div>
+                <div style="background-color: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 4px; text-align: center;">
+                    <span id="zram-used" style="font-size: 1.2em; font-weight: bold; display: block;">--</span>
+                    <span style="font-size: 0.8em; opacity: 0.7;">Actual Used</span>
+                </div>
             </div>
             
-            <!-- Chart Placeholder (Canvas Removed for Safety Test) -->
+            <!-- Chart Placeholder -->
             <div style="padding: 10px; text-align: center; color: #888;">
-                [Chart Disabled for Layout Test]
+                [Inline Style Test]
             </div>
             
-            <!-- Table -->
+            <!-- Table with Inline Styles -->
             <div class="TableContainer">
-                <table id="zram-device-table">
-                    <thead><tr><th>Device</th><th>Disk Size</th><th>Orig Data</th><th>Compr Data</th><th>Algorithm</th></tr></thead>
+                <table id="zram-device-table" style="width: 100%; font-size: 0.9em; margin-top: 10px; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left; opacity: 0.6; border-bottom: 1px solid rgba(255,255,255,0.1);">Device</th>
+                            <th style="text-align: left; opacity: 0.6; border-bottom: 1px solid rgba(255,255,255,0.1);">Disk Size</th>
+                            <th style="text-align: left; opacity: 0.6; border-bottom: 1px solid rgba(255,255,255,0.1);">Orig Data</th>
+                            <th style="text-align: left; opacity: 0.6; border-bottom: 1px solid rgba(255,255,255,0.1);">Compr Data</th>
+                            <th style="text-align: left; opacity: 0.6; border-bottom: 1px solid rgba(255,255,255,0.1);">Algorithm</th>
+                        </tr>
+                    </thead>
                     <tbody></tbody>
                 </table>
             </div>
         </div>
         
-        <!-- Scripts (Chart JS Disabled) -->
+        <!-- Scripts (Still Disabled) -->
         <!--
-        <script>
-            const ZRAM_CONFIG = {
-                pollInterval: <?php echo intval($zram_settings['refresh_interval']); ?>, 
-                url: '/plugins/unraid-zram-card/zram_status.php'
-            };
-        </script>
-        <script src="/plugins/unraid-zram-card/js/chart.min.js"></script>
-        <script src="/plugins/unraid-zram-card/js/zram-card.js"></script>
+        <script> ... </script>
         -->
     </td>
   </tr>
