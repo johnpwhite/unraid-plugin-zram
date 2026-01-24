@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "unraid-zram-card">
 <!ENTITY author    "John White">
-<!ENTITY version   "2026.01.25.6">
+<!ENTITY version   "2026.01.25.7">
 <!ENTITY launch    "Settings/UnraidZramCard">
 <!ENTITY gitURL    "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master">
 <!ENTITY pluginURL "&gitURL;/unraid-zram-card.plg">
@@ -12,6 +12,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0" support="&gitURL;/src/unraid-zram-card/HELP.md">
 
 <CHANGES>
+## 2026.01.25.7
+- Fix: Removed closure in ZramCard.php to avoid potential PHP version/context parsing issues.
+- Fix: Renamed internal variables in ZramCard.php to avoid global collision.
 ## 2026.01.25.6
 - Fix: Ensured output buffer is cleared on error to prevent dashboard hangs.
 ## 2026.01.25.5

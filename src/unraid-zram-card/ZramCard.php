@@ -2,85 +2,83 @@
 // ZramCard.php
 // Dashboard Card for ZRAM Statistics
 
-(function() {
-    // 1. Load Settings safely
-    $configFile = "/boot/config/plugins/unraid-zram-card/settings.ini";
-    $settings = [
-        'enabled' => 'yes',
-        'refresh_interval' => 3000
-    ];
-    
-    if (file_exists($configFile)) {
-        $loaded = @parse_ini_file($configFile); // Suppress warnings
-        if ($loaded && is_array($loaded)) {
-            $settings = array_merge($settings, $loaded);
-        }
-    }
+// 1. Load Settings safely (prefixed variables to avoid collision)
+$zram_configFile = "/boot/config/plugins/unraid-zram-card/settings.ini";
+$zram_settings = [
+    'enabled' => 'yes',
+    'refresh_interval' => 3000
+];
 
-    // 2. Check if enabled
-    if (($settings['enabled'] ?? 'yes') !== 'yes') {
-        return; // Exit closure, outputs nothing
+if (file_exists($zram_configFile)) {
+    $zram_loaded = @parse_ini_file($zram_configFile); // Suppress warnings
+    if ($zram_loaded && is_array($zram_loaded)) {
+        $zram_settings = array_merge($zram_settings, $zram_loaded);
     }
+}
+
+// 2. Check if enabled
+// Using a conditional block to control output instead of 'return'
+if (($zram_settings['enabled'] ?? 'yes') === 'yes'):
 
     // 3. Check for Unraid 7.2+ Responsive GUI safely
-    $isResponsiveWebgui = false;
+    $zram_isResponsiveWebgui = false;
     if (file_exists('/etc/unraid-version')) {
-        $ver = @parse_ini_file('/etc/unraid-version');
-        if ($ver && isset($ver['version'])) {
-            $isResponsiveWebgui = version_compare($ver['version'], '7.2.0-beta', '>=');
+        $zram_ver = @parse_ini_file('/etc/unraid-version');
+        if ($zram_ver && isset($zram_ver['version'])) {
+            $zram_isResponsiveWebgui = version_compare($zram_ver['version'], '7.2.0-beta', '>=');
         }
     }
 
     // Unique ID for this card's elements
-    $cardId = 'zram-dashboard-card';
+    $zram_cardId = 'zram-dashboard-card';
 ?>
 
 <style>
-#<?php echo $cardId; ?> .zram-stats-grid {
+#<?php echo $zram_cardId; ?> .zram-stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 10px;
     margin-bottom: 10px;
 }
-#<?php echo $cardId; ?> .zram-stat-item {
+#<?php echo $zram_cardId; ?> .zram-stat-item {
     background-color: rgba(255, 255, 255, 0.05);
     padding: 10px;
     border-radius: 4px;
     text-align: center;
 }
-#<?php echo $cardId; ?> .zram-stat-value {
+#<?php echo $zram_cardId; ?> .zram-stat-value {
     font-size: 1.2em;
     font-weight: bold;
     display: block;
 }
-#<?php echo $cardId; ?> .zram-stat-label {
+#<?php echo $zram_cardId; ?> .zram-stat-label {
     font-size: 0.8em;
     opacity: 0.7;
 }
-#<?php echo $cardId; ?> table {
+#<?php echo $zram_cardId; ?> table {
     width: 100%;
     font-size: 0.9em;
     margin-top: 10px;
     border-collapse: collapse;
 }
-#<?php echo $cardId; ?> th {
+#<?php echo $zram_cardId; ?> th {
     text-align: left;
     opacity: 0.6;
     border-bottom: 1px solid rgba(255,255,255,0.1);
 }
-#<?php echo $cardId; ?> td {
+#<?php echo $zram_cardId; ?> td {
     padding: 4px 0;
 }
 </style>
 
-<tbody title='ZRAM Usage' id='<?php echo $cardId; ?>'>
+<tbody title='ZRAM Usage' id='<?php echo $zram_cardId; ?>'>
   <tr>
     <td>
       <span class='tile-header'>
         <span class='tile-header-left'>
           <i class='fa fa-compress f32'></i> <!-- Icon -->
           <div class='section'>
-            <?php if ($isResponsiveWebgui): ?>
+            <?php if ($zram_isResponsiveWebgui): ?>
               <h3 class='tile-header-main'>ZRAM Status</h3>
               <span id="zram-subtitle">Initializing...</span>
             <?php else: ?>
@@ -144,7 +142,7 @@
         <script>
             // Configuration passed from PHP
             const ZRAM_CONFIG = {
-                pollInterval: <?php echo intval($settings['refresh_interval']); ?>, 
+                pollInterval: <?php echo intval($zram_settings['refresh_interval']); ?>, 
                 url: '/plugins/unraid-zram-card/zram_status.php'
             };
         </script>
@@ -153,6 +151,5 @@
     </td>
   </tr>
 </tbody>
-<?php
-})(); // End of closure
-?>
+
+<?php endif; // End check for enabled ?>
