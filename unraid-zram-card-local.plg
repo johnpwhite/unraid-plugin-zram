@@ -44,6 +44,10 @@ echo "Cleaning up old installation..."
 <LOCAL>&boot;/icon.png</LOCAL>
 </FILE>
 
+<FILE Name="&emhttp;/README.md">
+<LOCAL>&boot;/README.md</LOCAL>
+</FILE>
+
 <FILE Name="&emhttp;/js/chart.min.js">
 <LOCAL>&boot;/js/chart.js</LOCAL>
 </FILE>

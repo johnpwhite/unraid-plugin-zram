@@ -226,15 +226,6 @@ Plugins should download assets to the USB drive (persistent) and then install to
 *   **Naming**: Kebab-case for directories/repos (`unraid-zram-card`).
 *   **Icons**: standard FontAwesome or local PNGs.
 *   **Safety**: Read-only operations for the dashboard card (do not modify system ZRAM settings unless explicitly commanded).
-
-1.  **Draft**: Edit files locally.
-2.  **Package**: Create the `.plg` (and optional `.txz` archive of sources).
-3.  **Deploy**:
-    *   *Option A (Dev)*: SCP files directly to `/usr/local/emhttp/plugins/unraid-zram-card/` on the server for instant UI updates.
-    *   *Option B (Install)*: Copy `.plg` to `/boot/config/plugins/` and reboot or run `installplg /boot/config/plugins/my.plg`.
-4.  **Debug**: Check `/var/log/syslog` and Web Developer Console.
-
-## Conventions
-*   **Naming**: Kebab-case for directories/repos (`unraid-zram-card`).
-*   **Icons**: standard FontAwesome or local PNGs.
-*   **Safety**: Read-only operations for the dashboard card (do not modify system ZRAM settings unless explicitly commanded).
+*   **Versioning**: Strict YYYY.MM.DD format. If multiple releases occur on the same day, use `.1`, `.2`, etc. (e.g., `2024.01.24.1`). Do NOT use letters (e.g., `2024.01.24a` is invalid).
+*   **Display Name**: The name shown in the "Installed Plugins" list is derived from the **filename** of the `.plg` file. To have a friendly name like "UnraidZramCard", name your file `UnraidZramCard.plg`.
+*   **Description**: To show a description in the "Installed Plugins" list, include a `README.md` file in your plugin directory (`/usr/local/emhttp/plugins/my-plugin/README.md`). The Plugin Manager parses this file.

@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "unraid-zram-card">
 <!ENTITY author    "Gemini Agent">
-<!ENTITY version   "2026.01.24a">
+<!ENTITY version   "2026.01.24.2">
 <!ENTITY launch    "Settings/UnraidZramCard">
 <!ENTITY gitURL    "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master">
 <!ENTITY pluginURL "&gitURL;/unraid-zram-card.plg">
@@ -12,7 +12,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0" support="https://forums.unraid.net/">
 
 <CHANGES>
-## 2026.01.24a
+## 2026.01.24.2
+- Fix: Dashboard card registration and settings menu placement.
+## 2026.01.24.1
 - Fix: Switched to direct URL downloads for network installation.
 </CHANGES>
 
@@ -42,6 +44,11 @@ echo "Cleaning up old installation..."
 <URL>&gitURL;/src/unraid-zram-card/UnraidZramCard.page</URL>
 </FILE>
 
+<!-- Dashboard Registration -->
+<FILE Name="&emhttp;/UnraidZramDash.page">
+<URL>&gitURL;/src/unraid-zram-card/UnraidZramDash.page</URL>
+</FILE>
+
 <!-- JS Logic -->
 <FILE Name="&emhttp;/js/zram-card.js">
 <URL>&gitURL;/src/unraid-zram-card/js/zram-card.js</URL>
@@ -50,6 +57,11 @@ echo "Cleaning up old installation..."
 <!-- Icon -->
 <FILE Name="&emhttp;/icon.png">
 <URL>&gitURL;/src/unraid-zram-card/icon.png</URL>
+</FILE>
+
+<!-- Description (README.md) -->
+<FILE Name="&emhttp;/README.md">
+<URL>&gitURL;/src/unraid-zram-card/README.md</URL>
 </FILE>
 
 <!-- Chart.js Library -->
