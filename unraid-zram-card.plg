@@ -2,16 +2,18 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "unraid-zram-card">
 <!ENTITY author    "John White">
-<!ENTITY version   "2026.01.25.17">
+<!ENTITY version   "2026.01.25.18">
 <!ENTITY launch    "Settings/UnraidZramCard">
+<!ENTITY boot      "/boot/config/plugins/unraid-zram-card">
+<!ENTITY emhttp    "/usr/local/emhttp/plugins/unraid-zram-card">
 <!ENTITY gitURL    "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master">
-<!ENTITY pluginURL "&gitURL;/unraid-zram-card.plg">
-<!ENTITY boot      "/boot/config/plugins/&name;">
-<!ENTITY emhttp    "/usr/local/emhttp/plugins/&name;">
 ]>
-<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0" support="&gitURL;/src/unraid-zram-card/HELP.md">
+<PLUGIN name="unraid-zram-card" author="John White" version="2026.01.25.18" launch="Settings/UnraidZramCard" pluginURL="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/unraid-zram-card.plg" min="6.12.0" support="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/src/unraid-zram-card/HELP.md">
 
 <CHANGES>
+## 2026.01.25.18
+- Fix: Hardcoded all attributes in PLUGIN tag to resolve stubborn XML parsing errors during installation.
+- Fix: Removed dependency on recursive entities for critical plugin metadata.
 ## 2026.01.25.17
 - Fix: Reverted .plg header structure to match known-good version .10 to resolve installation XML errors.
 - Debug: Dashboard card remains in 'Inline Styles Only' mode (no Chart.js) to verify layout stability.
