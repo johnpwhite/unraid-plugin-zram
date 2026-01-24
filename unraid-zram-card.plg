@@ -4,16 +4,16 @@
 <!ENTITY author    "Gemini Agent">
 <!ENTITY version   "2026.01.24">
 <!ENTITY launch    "Settings/UnraidZramCard">
-<!ENTITY pluginURL "http://192.168.1.38:9080/johner/unraid-zram-card/-/raw/master/unraid-zram-card.plg">
+<!ENTITY pluginURL "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/unraid-zram-card.plg">
 ...
 <!-- Icon -->
 <FILE Name="&emhttp;/icon.png">
-<URL>http://192.168.1.38:9080/johner/unraid-zram-card/-/raw/master/src/unraid-zram-card/icon.png</URL>
+<URL>https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/src/unraid-zram-card/icon.png</URL>
 </FILE>
 
 <!-- Chart.js Library -->
 <FILE Name="&emhttp;/js/chart.min.js">
-<URL>http://192.168.1.38:9080/johner/unraid-zram-card/-/raw/master/src/unraid-zram-card/js/chart.js</URL>
+<URL>https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/src/unraid-zram-card/js/chart.js</URL>
 </FILE>
 
 <!-- 3. POST-INSTALL -->
