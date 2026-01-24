@@ -64,6 +64,12 @@ Unraid's pre-installer parser is strict and can fail with "XML parse error" if t
 
 **Dashboard Integration has changed.** The old method of just including a PHP file often leads to **Blank Page Crashes** due to variable scope collisions.
 
+#### Critical: Avoid Nested Tables
+**Do NOT use `<table>` (and specifically `<tbody>`) tags inside your dashboard card.**
+*   **Reason:** Unraid's `dynamix.js` scans the DOM for *all* `tbody` elements to enable drag-and-drop reordering. It assumes every `tbody` is a dashboard tile and tries to read its internal properties (like `md5`).
+*   **Symptom:** `TypeError: Cannot read properties of undefined (reading 'md5')` and a broken dashboard.
+*   **Solution:** Use **CSS Grid** or **Flexbox** with `<div>` elements for tabular data within your card.
+
 #### The "Function Pattern" (Required for Stability)
 Do not write raw HTML/PHP logic at the top level of the included card file. Wrap it in a unique function.
 

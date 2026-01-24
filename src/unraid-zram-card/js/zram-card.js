@@ -1,7 +1,6 @@
 // zram-card.js
 
 (function() {
-    const ctx = document.getElementById('zramChart').getContext('2d');
     let chartInstance = null;
     const historyLimit = 30; // Keep last 30 data points
     const historyData = {
@@ -14,22 +13,27 @@
         if (!+bytes) return '0 B';
         const k = 1024;
         const dm = decimals < 0 ? 0 : decimals;
-        const sizes = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
     }
 
     // Initialize Chart
     function initChart() {
+        const canvas = document.getElementById('zramChart');
+        if (!canvas) return;
+
         if (typeof Chart === 'undefined') {
             console.warn('Chart.js not loaded yet.');
             return;
         }
 
+        const ctx = canvas.getContext('2d');
+
         // Unraid theme colors (approximate)
-        const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--orange-500') || '#ff8c00';
-        const gridColor = 'rgba(255, 255, 255, 0.1)';
-        const textColor = '#ccc';
+        const accentColor = '#7fba59'; // Greenish
+        const gridColor = 'rgba(255, 255, 255, 0.05)';
+        const textColor = '#888';
 
         chartInstance = new Chart(ctx, {
             type: 'line',
@@ -39,10 +43,11 @@
                     label: 'RAM Saved',
                     data: historyData.saved,
                     borderColor: accentColor,
-                    backgroundColor: accentColor + '33', // 20% opacity
-                    borderWidth: 2,
+                    backgroundColor: 'rgba(127, 186, 89, 0.1)',
+                    borderWidth: 1.5,
                     fill: true,
-                    tension: 0.4 // Smooth curves
+                    tension: 0.4,
+                    pointRadius: 0
                 }]
             },
             options: {
@@ -61,21 +66,20 @@
                     }
                 },
                 scales: {
-                    x: {
-                        display: false // Hide time labels for cleaner look
-                    },
+                    x: { display: false },
                     y: {
                         beginAtZero: true,
                         grid: { color: gridColor },
                         ticks: {
                             color: textColor,
+                            font: { size: 10 },
                             callback: function(value) {
                                 return formatBytes(value, 0);
                             }
                         }
                     }
                 },
-                animation: { duration: 0 } // Disable animation for performance on updates
+                animation: { duration: 0 }
             }
         });
     }
@@ -83,60 +87,59 @@
     // Fetch and Update
     async function updateStats() {
         try {
-            const response = await fetch(ZRAM_CONFIG.url);
+            const config = window.ZRAM_CONFIG || { url: '/plugins/unraid-zram-card/zram_status.php', pollInterval: 3000 };
+            const response = await fetch(config.url);
             if (!response.ok) throw new Error('Network response was not ok');
             const data = await response.json();
 
             // 1. Update Aggregates
             const aggs = data.aggregates;
-            document.getElementById('zram-saved').textContent = formatBytes(aggs.memory_saved);
-            document.getElementById('zram-ratio').textContent = aggs.compression_ratio + 'x';
-            document.getElementById('zram-used').textContent = formatBytes(aggs.total_used);
+            const elSaved = document.getElementById('zram-saved');
+            const elRatio = document.getElementById('zram-ratio');
+            const elUsed = document.getElementById('zram-used');
+            
+            if (elSaved) elSaved.textContent = formatBytes(aggs.memory_saved);
+            if (elRatio) elRatio.textContent = aggs.compression_ratio + 'x';
+            if (elUsed) elUsed.textContent = formatBytes(aggs.total_used);
             
             // Subtitle status
-            const statusText = `Total: ${formatBytes(aggs.disk_size_total)} | Used: ${formatBytes(aggs.total_used)}`;
-            const sub = document.getElementById('zram-subtitle');
+            const statusText = aggs.disk_size_total > 0 ? `Active (${data.devices.length} devs)` : 'Inactive';
+            const sub = document.querySelector('.zram-subtitle');
             if (sub) sub.textContent = statusText;
-            const subLeg = document.getElementById('zram-subtitle-legacy');
-            if (subLeg) subLeg.textContent = statusText;
 
-            // 2. Update Table
-            const tbody = document.querySelector('#zram-device-table tbody');
-            tbody.innerHTML = '';
-            
-            if (!data.devices || data.devices.length === 0) {
-                const row = document.createElement('tr');
-                row.innerHTML = `<td colspan="5" style="text-align:center; font-style:italic; padding: 10px;">zram not configured</td>`;
-                tbody.appendChild(row);
-                
-                 // Reset aggregates display
-                document.getElementById('zram-saved').textContent = formatBytes(0);
-                document.getElementById('zram-ratio').textContent = '0x';
-                document.getElementById('zram-used').textContent = formatBytes(0);
-                
-            } else {
-                data.devices.forEach(dev => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${dev.name}</td>
-                        <td>${formatBytes(dev.disksize)}</td>
-                        <td>${formatBytes(dev.data)}</td>
-                        <td>${formatBytes(dev.compr)}</td>
-                        <td>${dev.algorithm}</td>
-                    `;
-                    tbody.appendChild(row);
-                });
+            // 2. Update Device List (Div-based)
+            const listContainer = document.getElementById('zram-device-list');
+            if (listContainer) {
+                if (!data.devices || data.devices.length === 0) {
+                    listContainer.innerHTML = '<div style="text-align: center; opacity: 0.6; padding: 10px;">No ZRAM devices active.</div>';
+                } else {
+                    let html = `
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 5px; opacity: 0.6; font-size: 0.85em; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 2px;">
+                            <div style="text-align: left;">Dev</div>
+                            <div style="text-align: right;">Size</div>
+                            <div style="text-align: right;">Used</div>
+                            <div style="text-align: right;">Comp</div>
+                        </div>`;
+                    
+                    data.devices.forEach(dev => {
+                        html += `
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 5px; font-size: 0.85em; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.02);">
+                                <div style="text-align: left; font-weight: bold;">${dev.name}</div>
+                                <div style="text-align: right; opacity: 0.8;">${formatBytes(dev.disksize)}</div>
+                                <div style="text-align: right; opacity: 0.8;">${formatBytes(dev.total)}</div>
+                                <div style="text-align: right; opacity: 0.8;">${dev.algorithm}</div>
+                            </div>`;
+                    });
+                    listContainer.innerHTML = html;
+                }
             }
 
             // 3. Update Chart
             if (chartInstance) {
                 const now = new Date().toLocaleTimeString();
-                
-                // Add new data
                 historyData.labels.push(now);
                 historyData.saved.push(aggs.memory_saved);
 
-                // Remove old data
                 if (historyData.labels.length > historyLimit) {
                     historyData.labels.shift();
                     historyData.saved.shift();
@@ -152,9 +155,14 @@
         }
     }
 
-    // Start
-    initChart();
-    updateStats(); // Initial call
-    setInterval(updateStats, ZRAM_CONFIG.pollInterval);
+    // Initialize
+    if (document.readyState === 'complete') {
+        updateStats();
+    } else {
+        window.addEventListener('load', updateStats);
+    }
+    
+    const config = window.ZRAM_CONFIG || { pollInterval: 3000 };
+    setInterval(updateStats, config.pollInterval);
 
 })();
