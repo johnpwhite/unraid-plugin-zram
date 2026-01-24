@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "unraid-zram-card">
 <!ENTITY author    "John White">
-<!ENTITY version   "2026.01.24.5">
+<!ENTITY version   "2026.01.24.6">
 <!ENTITY launch    "Settings/UnraidZramCard">
 <!ENTITY gitURL    "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master">
 <!ENTITY pluginURL "&gitURL;/unraid-zram-card.plg">
@@ -12,6 +12,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0" support="&gitURL;/src/unraid-zram-card/HELP.md">
 
 <CHANGES>
+## 2026.01.24.6
+- Fix: Uninstall script now uses explicit paths and updates plugin cache to ensure removal of UI elements.
+- Fix: Formatting of description using double newlines.
 ## 2026.01.24.5
 - Fix: Improved uninstall script to refresh WebGUI and remove artifacts.
 ## 2026.01.24.4
@@ -86,8 +89,26 @@ echo "&name; installed successfully."
 <!-- 4. REMOVE -->
 <REMOVE Script="remove.sh">
 #!/bin/bash
-removepkg &name;-&version;
-rm -rf &emhttp;
+# Define path variable to avoid XML entity issues in script
+PLUGIN_DIR="/usr/local/emhttp/plugins/unraid-zram-card"
+
+# Remove the plugin directory
+if [ -d "$PLUGIN_DIR" ]; then
+    rm -rf "$PLUGIN_DIR"
+    echo "Removed $PLUGIN_DIR"
+else
+    echo "$PLUGIN_DIR not found"
+fi
+
+# Attempt to remove the package if it was registered (handling both naming conventions)
+removepkg unraid-zram-card-&version;
+removepkg unraid-zram-card
+
+# Force WebGUI refresh
+if [ -f /usr/local/sbin/update_plugin_cache ]; then
+    /usr/local/sbin/update_plugin_cache
+fi
+
 # Reload Nginx to clear cached pages
 /etc/rc.d/rc.nginx reload
 echo "&name; removed."
