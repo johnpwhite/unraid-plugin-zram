@@ -1,4 +1,4 @@
-<!ENTITY version   "2026.01.25.12">
+<!ENTITY version   "2026.01.25.13">
 <!ENTITY launch    "Settings/UnraidZramCard">
 <!ENTITY pluginURL "/boot/config/plugins/&name;/unraid-zram-card-local.plg">
 <!ENTITY boot      "/boot/config/plugins/&name;">
@@ -7,6 +7,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0" support="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/src/unraid-zram-card/HELP.md">
 
 <CHANGES>
+## 2026.01.25.13
+- Debug: Re-enabled full HTML structure (Grid, Table) but disabled Chart.js/Scripts.
+- Debug: Testing if HTML structure/CSS causes layout crashes.
 ## 2026.01.25.12
 - Debug: Reverted to minimal card but added Settings loading logic to verify PHP backend.
 - Debug: Validating if 'parse_ini_file' or logic blocks are causing crashes.
