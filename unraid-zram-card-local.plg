@@ -1,16 +1,19 @@
 <?xml version='1.0' standalone='yes'?>
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "unraid-zram-card">
-<!ENTITY author    "Gemini Agent">
-<!ENTITY version   "2026.01.24.3">
+<!ENTITY author    "John White">
+<!ENTITY version   "2026.01.24.4">
 <!ENTITY launch    "Settings/UnraidZramCard">
 <!ENTITY pluginURL "/boot/config/plugins/&name;/unraid-zram-card-local.plg">
 <!ENTITY boot      "/boot/config/plugins/&name;">
 <!ENTITY emhttp    "/usr/local/emhttp/plugins/&name;">
 ]>
-<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0" support="https://forums.unraid.net/">
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0" support="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/src/unraid-zram-card/HELP.md">
 
 <CHANGES>
+## 2026.01.24.4
+- Finalized author and support metadata.
+## 2026.01.24.3
 ## 2026.01.24
 - Initial Release: Local Install Version
 </CHANGES>

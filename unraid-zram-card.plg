@@ -1,17 +1,20 @@
 <?xml version='1.0' standalone='yes'?>
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "unraid-zram-card">
-<!ENTITY author    "Gemini Agent">
-<!ENTITY version   "2026.01.24.3">
+<!ENTITY author    "John White">
+<!ENTITY version   "2026.01.24.4">
 <!ENTITY launch    "Settings/UnraidZramCard">
 <!ENTITY gitURL    "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master">
 <!ENTITY pluginURL "&gitURL;/unraid-zram-card.plg">
 <!ENTITY boot      "/boot/config/plugins/&name;">
 <!ENTITY emhttp    "/usr/local/emhttp/plugins/&name;">
 ]>
-<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0" support="https://forums.unraid.net/">
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0" support="&gitURL;/src/unraid-zram-card/HELP.md">
 
 <CHANGES>
+## 2026.01.24.4
+- Fix: Formatting of plugin description in plugin manager.
+- Update: Changed author and support link.
 ## 2026.01.24.3
 - Fix: Settings 'enabled' toggle not saving correctly.
 - Fix: Reduced dashboard card size to fit better.
