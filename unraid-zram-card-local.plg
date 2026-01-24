@@ -1,4 +1,4 @@
-<!ENTITY version   "2026.01.25.10">
+<!ENTITY version   "2026.01.25.11">
 <!ENTITY launch    "Settings/UnraidZramCard">
 <!ENTITY pluginURL "/boot/config/plugins/&name;/unraid-zram-card-local.plg">
 <!ENTITY boot      "/boot/config/plugins/&name;">
@@ -7,6 +7,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0" support="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/src/unraid-zram-card/HELP.md">
 
 <CHANGES>
+## 2026.01.25.11
+- Fix: Restored full card functionality using the safe Function Pattern verified in version .10.
+- Fix: Removed debug logging.
 ## 2026.01.25.10
 - Debug: Replaced dashboard card with minimal "Hello World" version to isolate rendering issues.
 - Debug: Added logging to /tmp/zram_debug.log to trace execution flow.
