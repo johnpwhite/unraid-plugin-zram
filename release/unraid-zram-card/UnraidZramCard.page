@@ -1,0 +1,15 @@
+Menu="Utilities"
+Title="ZRAM Status"
+Icon="server"
+---
+<?php
+// This is the main page for the plugin.
+// Currently it just displays a placeholder or instructions.
+// The actual functionality is the Dashboard Card.
+?>
+<div style="padding: 20px;">
+    <h2>ZRAM Status Plugin</h2>
+    <p>This plugin installs a dashboard card to monitor ZRAM usage.</p>
+    <p>Go to the <b>Dashboard</b> tab to see the "ZRAM Usage" card.</p>
+    <p>If you do not see the card, check your Dashboard settings to enable it.</p>
+</div>

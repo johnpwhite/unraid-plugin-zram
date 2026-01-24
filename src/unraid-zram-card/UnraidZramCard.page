@@ -1,0 +1,81 @@
+Menu="Settings"
+Title="Unraid ZRAM Card"
+Icon="server"
+---
+<?php
+// Configuration File Path
+$configFile = "/boot/config/plugins/unraid-zram-card/settings.ini";
+
+// Defaults
+$defaults = [
+    'enabled' => 'yes',
+    'refresh_interval' => '3000'
+];
+
+// Helper: Save INI file
+if (!function_exists('write_ini_file')) {
+    function write_ini_file($file, $array = []) {
+        $res = [];
+        foreach($array as $key => $val) {
+            $res[] = "$key=\"$val\"";
+        }
+        file_put_contents($file, implode("\n", $res));
+    }
+}
+
+// Handle Submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $settings = $defaults;
+    $settings['enabled'] = isset($_POST['enabled']) ? 'yes' : 'no';
+    $settings['refresh_interval'] = intval($_POST['refresh_interval']);
+    
+    // Validation
+    if ($settings['refresh_interval'] < 1000) $settings['refresh_interval'] = 1000; // Minimum 1s
+
+    // Save
+    // Ensure directory exists
+    if (!is_dir(dirname($configFile))) {
+        mkdir(dirname($configFile), 0777, true);
+    }
+    write_ini_file($configFile, $settings);
+    
+    echo "<div class='updated'>Settings Saved</div>";
+}
+
+// Read Settings
+$settings = $defaults;
+if (file_exists($configFile)) {
+    $loaded = parse_ini_file($configFile);
+    if ($loaded) {
+        $settings = array_merge($defaults, $loaded);
+    }
+}
+
+?>
+
+<form method="post" action="/Settings/UnraidZramCard">
+    <div class="section">
+        <h3>Dashboard Card Configuration</h3>
+        
+        <dl>
+            <dt>Enable Dashboard Card:</dt>
+            <dd>
+                <select name="enabled">
+                    <option value="yes" <?php echo ($settings['enabled'] == 'yes') ? 'selected' : ''; ?>>Yes</option>
+                    <option value="no" <?php echo ($settings['enabled'] == 'no') ? 'selected' : ''; ?>>No</option>
+                </select>
+                <span class="help">Show or hide the ZRAM status card on the main Dashboard.</span>
+            </dd>
+            
+            <dt>Refresh Interval (ms):</dt>
+            <dd>
+                <input type="number" name="refresh_interval" value="<?php echo htmlspecialchars($settings['refresh_interval']); ?>" min="1000" step="500">
+                <span class="help">How often to update the stats (in milliseconds). Minimum 1000ms.</span>
+            </dd>
+        </dl>
+    </div>
+    
+    <div class="section">
+        <input type="submit" value="Save Settings">
+    </div>
+</form>
