@@ -9,7 +9,8 @@ $defaults = [
     'refresh_interval' => '3000', 
     'swap_size' => '1G',
     'zram_devices' => '',
-    'compression_algo' => 'zstd'
+    'compression_algo' => 'zstd',
+    'console_visible' => 'yes'
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
@@ -18,6 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
     $settings['refresh_interval'] = intval($_POST['refresh_interval']);
     $settings['swap_size'] = $_POST['swap_size'] ?: '1G';
     $settings['compression_algo'] = $_POST['compression_algo'] ?: 'zstd';
+    $settings['console_visible'] = ($_POST['console_visible'] === 'yes') ? 'yes' : 'no';
     
     if (file_exists($configFile)) {
         $loaded = @parse_ini_file($configFile);
@@ -42,10 +44,13 @@ $zram_raw = [];
 exec('zramctl --noheadings --raw --output NAME,DISKSIZE,DATA,COMPR,ALGORITHM', $zram_raw);
 $devices = [];
 foreach ($zram_raw as $line) {
-    $parts = preg_split('/
-+/', trim($line));
+    $parts = preg_split('/\s+/', trim($line));
     if (count($parts) >= 2) {
-        $devices[] = ['name' => $parts[0], 'size' => $parts[1], 'algo' => $parts[4] ?? ''];
+        $devices[] = [
+            'name' => $parts[0], 
+            'size' => $parts[1], 
+            'algo' => $parts[4] ?? '?'
+        ];
     }
 }
 
@@ -54,15 +59,14 @@ $algos = ['zstd', 'lz4', 'lzo', 'deflate', '842'];
 if (file_exists('/sys/block/zram0/comp_algorithm')) {
     $raw_algos = file_get_contents('/sys/block/zram0/comp_algorithm');
     $raw_algos = str_replace(['[', ']'], '', $raw_algos);
-    $algos = preg_split('/
-+/', trim($raw_algos));
+    $algos = preg_split('/\s+/', trim($raw_algos));
 }
 ?>
 
 <style>
     .zram-main-grid { display: flex; gap: 20px; flex-wrap: nowrap; align-items: flex-start; width: 100%; }
     .zram-config-left { flex: 0 0 450px; }
-    .zram-console-right { flex: 1; background: #1a1a1a; border-radius: 4px; border: 1px solid #333; padding: 15px; color: #aaa; font-family: monospace; font-size: 0.85em; min-width: 300px; }
+    .zram-console-right { flex: 1; background: #1a1a1a; border-radius: 4px; border: 1px solid #333; padding: 15px; color: #aaa; font-family: monospace; font-size: 0.85em; min-width: 300px; display: <?php echo ($settings['console_visible'] == 'yes') ? 'block' : 'none'; ?>; }
     
     .zram-btn { padding: 5px 12px; border-radius: 4px; cursor: pointer; border: none; font-weight: bold; margin-right: 5px; font-size: 0.9em; display: inline-block; vertical-align: middle; }
     .btn-create { background-color: #7fba59; color: white; }
@@ -112,8 +116,7 @@ if (file_exists('/sys/block/zram0/comp_algorithm')) {
             <h4 style="margin-top: 10px;">Active Devices: 
                 <?php if (count($devices) > 0): ?>
                     <span class="status-badge status-active">Active (<?php echo count($devices); ?>)</span>
-                <?php else:
-                ?>
+                <?php else: ?>
                     <span class="status-badge status-none">None</span>
                 <?php endif; ?>
             </h4>
@@ -122,8 +125,7 @@ if (file_exists('/sys/block/zram0/comp_algorithm')) {
                 <table class="dev-table">
                     <thead><tr><th>Device</th><th>Size</th><th>Algorithm</th><th style="text-align: right;">Action</th></tr></thead>
                     <tbody>
-                        <?php foreach ($devices as $dev):
-                        ?>
+                        <?php foreach ($devices as $dev): ?>
                         <tr>
                             <td><strong>/dev/<?php echo $dev['name']; ?></strong></td>
                             <td><?php echo $dev['size']; ?></td>
@@ -143,24 +145,42 @@ if (file_exists('/sys/block/zram0/comp_algorithm')) {
                 <h3>Dashboard Card Configuration</h3>
                 <dl>
                     <dt>Enable Dashboard Card:</dt>
-                    <dd><select name="enabled"><option value="yes" <?php echo ($settings['enabled'] == 'yes') ? 'selected' : ''; ?>>Yes</option><option value="no" <?php echo ($settings['enabled'] == 'no') ? 'selected' : ''; ?>>No</option></select></dd>
+                    <dd>
+                        <select name="enabled">
+                            <option value="yes" <?php echo ($settings['enabled'] == 'yes') ? 'selected' : ''; ?>>Yes</option>
+                            <option value="no" <?php echo ($settings['enabled'] == 'no') ? 'selected' : ''; ?>>No</option>
+                        </select>
+                    </dd>
                     <dt>Refresh Interval (ms):</dt>
                     <dd><input type="number" name="refresh_interval" value="<?php echo htmlspecialchars($settings['refresh_interval']); ?>" min="1000"></dd>
                     <dt>Default Swap Size:</dt>
                     <dd><input type="text" name="swap_size" value="<?php echo htmlspecialchars($settings['swap_size']); ?>"></dd>
                     <dt>Default Algorithm:</dt>
-                    <dd><select name="compression_algo"><?php foreach ($algos as $a): ?><option value="<?php echo $a; ?>" <?php echo ($settings['compression_algo'] == $a) ? 'selected' : ''; ?>><?php echo $a; ?></option><?php endforeach; ?></select></dd>
+                    <dd>
+                        <select name="compression_algo">
+                            <?php foreach ($algos as $a): ?>
+                                <option value="<?php echo $a; ?>" <?php echo ($settings['compression_algo'] == $a) ? 'selected' : ''; ?>><?php echo $a; ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </dd>
+                    <dt>Show Command Console:</dt>
+                    <dd>
+                        <select name="console_visible">
+                            <option value="yes" <?php echo ($settings['console_visible'] == 'yes') ? 'selected' : ''; ?>>Yes</option>
+                            <option value="no" <?php echo ($settings['console_visible'] == 'no') ? 'selected' : ''; ?>>No</option>
+                        </select>
+                    </dd>
                 </dl>
             </div>
             <div class="section"><input type="submit" name="save_settings" value="Save Settings"></div>
         </form>
     </div>
 
-    <div class="zram-console-right">
+    <div class="zram-console-right" id="zram-console-pane">
         <h4 style="margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 5px;">Command Console</h4>
         <div id="console-log"></div>
         <div style="margin-top: 10px; border-top: 1px solid #444; padding-top: 10px;">
-            <button class="zram-btn" style="background: #444; color: #fff; width: 100%;" onclick="clearPersistentLogs()">Clear Console</button>
+            <button type="button" class="zram-btn" style="background: #444; color: #fff; width: 100%;" onclick="clearPersistentLogs()">Clear Console</button>
         </div>
     </div>
 </div>
@@ -168,6 +188,7 @@ if (file_exists('/sys/block/zram0/comp_algorithm')) {
 <script>
 function renderLog(entry) {
     const log = document.getElementById('console-log');
+    if (!log) return;
     const div = document.createElement('div');
     div.className = 'log-entry ' + (entry.type ? 'log-' + entry.type : '');
     div.innerText = `[${entry.time}] ${entry.msg}`;
@@ -214,7 +235,7 @@ function manageZram(action, device) {
 
         if (data.success) {
             addLog(`Completed: ${data.message}`);
-            setTimeout(() => location.reload(), 3000);
+            setTimeout(() => location.reload(), 2000);
         } else {
             addLog(`CRITICAL ERROR: ${data.message}`, 'err');
             btn.disabled = false;
