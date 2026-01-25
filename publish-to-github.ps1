@@ -33,42 +33,46 @@ try {
     # 5. File Swapping (README)
     if (Test-Path "README.public.md") {
         Write-Host "Replacing internal README with public version..."
-        Remove-Item "README.md" -Force
+        if (Test-Path "README.md") { Remove-Item "README.md" -Force }
         Copy-Item "README.public.md" "README.md"
     }
 
     # 6. Cleaning (Remove internal files)
-    Write-Host "Removing internal files and debug logs..."
+    Write-Host "Removing internal files and temporary debug logs..."
     $internalFiles = @(
         "AGENT_SKILL_UNRAID_PLUGIN.md",
         "README.public.md",
         "publish-to-github.ps1",
-        "debug files"
+        "debug files",
+        ".git" # Not removing .git folder itself but we will use git add -A later
     )
 
     foreach ($file in $internalFiles) {
         if (Test-Path $file) {
-            git rm -r "$file" --force | Out-Null
+            Write-Host "  > Removing $file"
+            git rm -r "$file" --force --quiet 2>$null
         }
     }
 
     # 7. Commit & Squash
     Write-Host "Creating clean squash commit..."
     git add -A
-    git commit -m "Official Release v$version"
+    git commit -m "Official Release v$version" --quiet
 
     # 8. Push to GitHub
-    # We push our local 'deploy-github' branch to GitHub's 'main' branch
     Write-Host "Pushing to GitHub..." -ForegroundColor Yellow
     git push github deploy-github:main --force
 
     Write-Host "SUCCESS: Version $version is now live on GitHub!" -ForegroundColor Green
 
 }
+catch {
+    Write-Host "An error occurred during publishing: $($_.Exception.Message)" -ForegroundColor Red
+}
 finally {
     # 9. Cleanup
     Write-Host "Cleaning up local workspace..."
-    git checkout master
-    git branch -D deploy-github
+    git checkout master --quiet
+    git branch -D deploy-github --quiet
     Write-Host "Returned to master (GitLab branch)." -ForegroundColor Gray
 }

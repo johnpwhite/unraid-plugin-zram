@@ -2,12 +2,15 @@
 
 A modern, high-contrast dashboard card and management utility for ZRAM swap devices on Unraid 7.2+.
 
-![Dashboard Preview](https://raw.githubusercontent.com/johner/unraid-zram-card/main/src/unraid-zram-card/icon.png)
+![Dashboard Preview](https://raw.githubusercontent.com/johnpwhite/unraid-plugin-zram/main/docs/images/dashboard.png)
 
 ## Features
 
 *   **Real-time Dashboard Card:** Monitor RAM saved, compression ratio, and actual ZRAM usage with a live-updating history chart.
 *   **On-the-fly Management:** Create and remove ZRAM swap devices directly from the Settings page.
+
+![Settings Preview](https://raw.githubusercontent.com/johnpwhite/unraid-plugin-zram/main/docs/images/settings.png)
+
 *   **Compression Choice:** Support for all kernel-supported algorithms (`zstd`, `lz4`, `lzo`, etc.).
 *   **Boot Persistence:** Automatically re-applies your ZRAM configuration on every boot.
 *   **Safe Evacuation:** Built-in guards to prevent OOM crashes when removing ZRAM devices.
