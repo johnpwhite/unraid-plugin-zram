@@ -2,26 +2,20 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "unraid-zram-card">
 <!ENTITY author    "John White">
-<!ENTITY version   "2026.01.25.56">
+<!ENTITY version   "2026.01.25.57">
 <!ENTITY launch    "Settings/UnraidZramCard">
 <!ENTITY gitURL    "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master">
 <!ENTITY pluginURL "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/unraid-zram-card.plg">
 <!ENTITY boot      "/boot/config/plugins/unraid-zram-card">
 <!ENTITY emhttp    "/usr/local/emhttp/plugins/unraid-zram-card">
 ]>
-<PLUGIN name="unraid-zram-card" author="John White" version="2026.01.25.56" launch="Settings/UnraidZramCard" pluginURL="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/unraid-zram-card.plg" min="6.12.1" support="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/src/unraid-zram-card/HELP.md">
+<PLUGIN name="unraid-zram-card" author="John White" version="2026.01.25.57" launch="Settings/UnraidZramCard" pluginURL="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/unraid-zram-card.plg" min="6.12.1" support="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/src/unraid-zram-card/HELP.md">
 
 <CHANGES>
+## 2026.01.25.57
+- Fix: Robust Uninstallation. The removal script now explicitly deletes the configuration folder on the flash drive (/boot/config/plugins/unraid-zram-card/) for a truly complete purge.
 ## 2026.01.25.56
-- Feature: Safe Evacuation Check. The plugin now prevents removing ZRAM devices if the system lacks enough RAM or alternative swap to receive the data, preventing OOM crashes.
-## 2026.01.25.55
-- UX: Improved chart Y-axis precision with decimal labels for better data alignment.
-- UX: Added headroom (grace) to chart scale so data lines don't hit the top edge.
-## 2026.01.25.54
-- Fix: Confirmed 'installplg' is removed in Unraid 7; usage of WebUI for manual install is now standard.
-- Fix: Improved Hybrid Installer logic to more reliably find local JS files on air-gapped servers.
-- Fix: Simplified uninstallation script to prevent UI hangs in Unraid 7.
-- Fix: Ensured 'js' directory is created before any file operations.
+- Feature: Safe Evacuation Check.
 </CHANGES>
 
 <!-- 1. HYBRID INSTALLER SCRIPT -->
@@ -99,6 +93,7 @@ fi
 #!/bin/bash
 NAME="unraid-zram-card"
 PLUGIN_DIR="/usr/local/emhttp/plugins/$NAME"
+CONFIG_DIR="/boot/config/plugins/$NAME"
 
 echo "Removing $NAME..."
 
@@ -109,14 +104,18 @@ if [ -f "$PLUGIN_DIR/zram_swap.php" ]; then
 fi
 
 # 2. Delete files
-echo "Deleting files..."
+echo "Deleting emhttp files..."
 rm -rf "$PLUGIN_DIR"
 
-# 3. Purge package
+# 3. Delete config files (Flash)
+echo "Deleting config files on flash..."
+rm -rf "$CONFIG_DIR"
+
+# 4. Purge package
 echo "Cleaning package manifests..."
 removepkg "$NAME" &gt; /dev/null 2&gt;&amp;1
 
-# 4. Refresh UI
+# 5. Refresh UI
 if [ -f /usr/local/sbin/update_plugin_cache ]; then
     /usr/local/sbin/update_plugin_cache
 fi
