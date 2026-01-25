@@ -2,20 +2,23 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "unraid-zram-card">
 <!ENTITY author    "John White">
-<!ENTITY version   "2026.01.25.45">
+<!ENTITY version   "2026.01.25.46">
 <!ENTITY launch    "Settings/UnraidZramCard">
 <!ENTITY gitURL    "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master">
 <!ENTITY pluginURL "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/unraid-zram-card.plg">
 <!ENTITY boot      "/boot/config/plugins/unraid-zram-card">
 <!ENTITY emhttp    "/usr/local/emhttp/plugins/unraid-zram-card">
 ]>
-<PLUGIN name="unraid-zram-card" author="John White" version="2026.01.25.45" launch="Settings/UnraidZramCard" pluginURL="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/unraid-zram-card.plg" min="6.12.0" support="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/src/unraid-zram-card/HELP.md">
+<PLUGIN name="unraid-zram-card" author="John White" version="2026.01.25.46" launch="Settings/UnraidZramCard" pluginURL="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/unraid-zram-card.plg" min="6.12.0" support="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/src/unraid-zram-card/HELP.md">
 
 <CHANGES>
+## 2026.01.25.46
+- Fix: Resolved XML parse error caused by raw ampersand in changelog.
+- Design: Re-verified "Apply &amp; Save" button theme synchronization.
 ## 2026.01.25.45
-- Design: Synchronized "Apply & Save" button with Unraid orange theme.
+- Design: Synchronized "Apply &amp; Save" button with Unraid orange theme.
 - Fix: Consolidated all plugin logs to /tmp/unraid-zram-card/ directory.
-- Fix: Repaired removal script to be significantly more robust with detailed logging to /tmp/unraid-zram-card/uninstall.log.
+- Fix: Repaired removal script to be significantly more robust with detailed logging.
 - Fix: Resolved double /dev/ display bug in device table.
 </CHANGES>
 
@@ -101,6 +104,8 @@ LOG="$LOG_DIR/uninstall.log"
     if [ -f "$PLUGIN_DIR/zram_swap.php" ]; then
         echo "Calling swap removal backend..."
         php "$PLUGIN_DIR/zram_swap.php" action=remove
+    else
+        echo "zram_swap.php not found, skipping swap cleanup."
     fi
 
     # 2. Remove files
@@ -109,15 +114,17 @@ LOG="$LOG_DIR/uninstall.log"
 
     # 3. Purge package
     echo "Removing package manifest..."
-    removepkg "$NAME" 2>&amp;1
+    removepkg "$NAME"
 
     # 4. Refresh WebUI
     echo "Updating plugin cache and reloading Nginx..."
-    /usr/local/sbin/update_plugin_cache
+    if [ -f /usr/local/sbin/update_plugin_cache ]; then
+        /usr/local/sbin/update_plugin_cache
+    fi
     /etc/rc.d/rc.nginx reload
 
     echo "--- UNINSTALL COMPLETE ---"
-} > "$LOG" 2>&amp;1
+} &gt; "$LOG" 2&gt;&amp;1
 
 exit 0
 </REMOVE>
