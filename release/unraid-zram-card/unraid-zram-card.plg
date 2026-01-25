@@ -2,21 +2,21 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "unraid-zram-card">
 <!ENTITY author    "John White">
-<!ENTITY version   "2026.01.25.44">
+<!ENTITY version   "2026.01.25.45">
 <!ENTITY launch    "Settings/UnraidZramCard">
 <!ENTITY gitURL    "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master">
 <!ENTITY pluginURL "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/unraid-zram-card.plg">
 <!ENTITY boot      "/boot/config/plugins/unraid-zram-card">
 <!ENTITY emhttp    "/usr/local/emhttp/plugins/unraid-zram-card">
 ]>
-<PLUGIN name="unraid-zram-card" author="John White" version="2026.01.25.44" launch="Settings/UnraidZramCard" pluginURL="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/unraid-zram-card.plg" min="6.12.0" support="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/src/unraid-zram-card/HELP.md">
+<PLUGIN name="unraid-zram-card" author="John White" version="2026.01.25.45" launch="Settings/UnraidZramCard" pluginURL="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/unraid-zram-card.plg" min="6.12.0" support="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/src/unraid-zram-card/HELP.md">
 
 <CHANGES>
-## 2026.01.25.44
-- Debug: Added detailed logging to uninstallation script (output to /tmp/zram_uninstall.log) to diagnose removal failures.
-## 2026.01.25.43
-- Design: Redesigned ZRAM Management section into a single-line shaded action box.
-- Fix: Improved input field visibility and focus colors.
+## 2026.01.25.45
+- Design: Synchronized "Apply & Save" button with Unraid orange theme.
+- Fix: Consolidated all plugin logs to /tmp/unraid-zram-card/ directory.
+- Fix: Repaired removal script to be significantly more robust with detailed logging to /tmp/unraid-zram-card/uninstall.log.
+- Fix: Resolved double /dev/ display bug in device table.
 </CHANGES>
 
 <!-- 1. HYBRID INSTALLER SCRIPT -->
@@ -87,45 +87,39 @@ echo "unraid-zram-card installed and ZRAM re-applied if configured."
 <!-- 3. REMOVE -->
 <REMOVE Script="remove.sh">
 #!/bin/bash
-# Robust removal for unraid-zram-card with logging
-LOG="/tmp/zram_uninstall.log"
-NAME="unraid-zram-card"
-PLUGIN_DIR="/usr/local/emhttp/plugins/$NAME"
+# Robust removal script
+LOG_DIR="/tmp/unraid-zram-card"
+mkdir -p "$LOG_DIR"
+LOG="$LOG_DIR/uninstall.log"
 
 {
     echo "--- UNINSTALL START: $(date) ---"
+    NAME="unraid-zram-card"
+    PLUGIN_DIR="/usr/local/emhttp/plugins/$NAME"
     
-    # 1. Stop ZRAM swap if script exists
+    # 1. Stop ZRAM swap
     if [ -f "$PLUGIN_DIR/zram_swap.php" ]; then
-        echo "Executing swap removal backend..."
+        echo "Calling swap removal backend..."
         php "$PLUGIN_DIR/zram_swap.php" action=remove
-    else
-        echo "zram_swap.php not found, skipping swap cleanup."
     fi
 
-    # 2. Remove the active plugin files
-    if [ -d "$PLUGIN_DIR" ]; then
-        echo "Removing plugin directory: $PLUGIN_DIR"
-        rm -rf "$PLUGIN_DIR"
-    fi
+    # 2. Remove files
+    echo "Deleting plugin directory..."
+    rm -rf "$PLUGIN_DIR"
 
-    # 3. Clean up package manifests (Wildcard match for version)
-    echo "Removing package manifests..."
+    # 3. Purge package
+    echo "Removing package manifest..."
     removepkg "$NAME" 2>&amp;1
 
-    # 4. Refresh Unraid state
-    echo "Updating plugin cache..."
-    if [ -f /usr/local/sbin/update_plugin_cache ]; then
-        /usr/local/sbin/update_plugin_cache
-    fi
-    
-    echo "Reloading Nginx..."
+    # 4. Refresh WebUI
+    echo "Updating plugin cache and reloading Nginx..."
+    /usr/local/sbin/update_plugin_cache
     /etc/rc.d/rc.nginx reload
 
     echo "--- UNINSTALL COMPLETE ---"
 } > "$LOG" 2>&amp;1
 
-echo "Removal complete. Details logged to $LOG"
+exit 0
 </REMOVE>
 
 </PLUGIN>

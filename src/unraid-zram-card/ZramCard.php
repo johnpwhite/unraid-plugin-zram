@@ -1,11 +1,13 @@
 <?php
-// ZramCard.php - Compact Version with Chart
+// ZramCard.php - Live Stats with Chart
 
 if (!function_exists('getZramDashboardCard')) {
     function getZramDashboardCard() {
         // Debug Logger
         $log = function($msg) {
-            @file_put_contents('/tmp/zram_debug.log', date('[Y-m-d H:i:s] ') . $msg . "\n", FILE_APPEND);
+            $dir = '/tmp/unraid-zram-card';
+            if (!is_dir($dir)) @mkdir($dir, 0777, true);
+            @file_put_contents($dir . '/debug.log', date('[Y-m-d H:i:s] ') . $msg . "\n", FILE_APPEND);
         };
         
         try {
@@ -22,7 +24,7 @@ if (!function_exists('getZramDashboardCard')) {
             };
 
             // --- 1. Load Settings ---
-            $zram_settings = ['enabled' => 'yes', 'refresh_interval' => 3000];
+            $zram_settings = ['enabled' => 'yes', 'refresh_interval' => '3000'];
             $zram_iniFile = '/boot/config/plugins/unraid-zram-card/settings.ini';
             if (file_exists($zram_iniFile)) {
                 $zram_loaded = @parse_ini_file($zram_iniFile);
@@ -168,7 +170,7 @@ if (!function_exists('getZramDashboardCard')) {
         } catch (Throwable $e) {
             if (ob_get_level() > 0) ob_end_clean();
             $log("CRITICAL ERROR: " . $e->getMessage());
-            return "<tbody title='ZRAM Error'><tr><td><div style='padding: 10px; color: #E57373; text-align: center;'><strong>ZRAM Plugin Error</strong><br><small>Run: cat /tmp/zram_debug.log</small></div></td></tr></tbody>";
+            return "<tbody title='ZRAM Error'><tr><td><div style='padding: 10px; color: #E57373; text-align: center;'><strong>ZRAM Plugin Error</strong><br><small>Run: cat /tmp/unraid-zram-card/debug.log</small></div></td></tr></tbody>";
         }
     }
 }
