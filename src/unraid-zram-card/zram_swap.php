@@ -82,8 +82,9 @@ elseif ($action === 'remove') {
         foreach ($devs as $d) {
             $d = trim($d);
             if ($d) {
-                run_cmd("swapoff /dev/$d", $logs);
-                run_cmd("zramctl --reset /dev/$d", $logs);
+                $devPath = (strpos($d, '/dev/') === 0) ? $d : "/dev/$d";
+                run_cmd("swapoff $devPath", $logs);
+                run_cmd("zramctl --reset $devPath", $logs);
             }
         }
         $settings = get_zram_settings($configFile);
@@ -91,7 +92,7 @@ elseif ($action === 'remove') {
         save_zram_settings($configFile, $settings);
         echo json_encode(['success' => true, 'message' => "Cleared all", 'logs' => $logs]);
     } else {
-        $devPath = (strpos($device, '/dev/') === false) ? "/dev/$device" : $device;
+        $devPath = (strpos($device, '/dev/') === 0) ? $device : "/dev/$device";
         run_cmd("swapoff $devPath", $logs);
         run_cmd("zramctl --reset $devPath", $logs);
         
