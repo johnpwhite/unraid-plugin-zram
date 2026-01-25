@@ -44,7 +44,8 @@ try {
         "README.public.md",
         "publish-to-github.ps1",
         "debug files",
-        ".git" # Not removing .git folder itself but we will use git add -A later
+        "screen-shots",
+        ".git"
     )
 
     foreach ($file in $internalFiles) {
