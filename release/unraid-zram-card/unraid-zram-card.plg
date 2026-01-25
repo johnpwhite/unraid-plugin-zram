@@ -9,9 +9,14 @@
 <!ENTITY boot      "/boot/config/plugins/unraid-zram-card">
 <!ENTITY emhttp    "/usr/local/emhttp/plugins/unraid-zram-card">
 ]>
-<PLUGIN name="unraid-zram-card" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.1" support="&gitURL;/src/unraid-zram-card/HELP.md">
+<PLUGIN name="unraid-zram-card" author="John White" version="2026.01.25.61" launch="Settings/UnraidZramCard" pluginURL="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/unraid-zram-card.plg" min="6.12.1" support="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/src/unraid-zram-card/HELP.md">
+
+<ICON>&gitURL;/src/unraid-zram-card/icon.png</ICON>
 
 <CHANGES>
+## 2026.01.25.61
+- Fix: Added explicit ICON tag to ensure visibility in Unraid Plugin Manager.
+- Feature: Updated plugin icon with new PNG artwork.
 ## 2026.01.25.60
 - Fix: Dynamic binary path detection in zram_init.sh. Resolved boot failure caused by hardcoded /usr/bin/zramctl path.
 - Fix: Ensured boot script correctly handles the combined size/algorithm command.
