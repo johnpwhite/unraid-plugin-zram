@@ -104,7 +104,7 @@ if (file_exists('/sys/block/zram0/comp_algorithm')) {
     
     .btn-create { background-color: #ff8c00; color: #fff; white-space: nowrap; }
     .btn-remove { background-color: #cc0000; color: #fff; }
-    .btn-save { background-color: #ff8c00 !important; color: #fff !important; width: 100%; margin-top: 10px; }
+    .btn-save-action { background-color: #ff8c00 !important; color: #fff !important; width: 100%; margin-top: 10px; }
     .btn-small { padding: 3px 8px; font-size: 0.75em; }
     
     .dev-table { width: 100%; border-collapse: collapse; margin-top: 5px; background: transparent; }
@@ -227,7 +227,7 @@ if (file_exists('/sys/block/zram0/comp_algorithm')) {
                             </select>
                         </dd>
                     </dl>
-                    <input type="submit" name="save_settings" value="APPLY & SAVE SETTINGS" class="zram-btn btn-save">
+                    <input type="submit" name="save_settings" value="APPLY & SAVE SETTINGS" class="zram-btn btn-save-action">
                 </div>
             </div>
         </form>
