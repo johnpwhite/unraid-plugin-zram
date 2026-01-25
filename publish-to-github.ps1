@@ -24,10 +24,19 @@ Write-Host "Creating temporary deployment branch..."
 git checkout -b deploy-github
 
 try {
-    # 4. Transformations (URL Rewriting)
-    Write-Host "Rewriting URLs in .plg for GitHub..."
+    # 4. Transformations (URL Rewriting & Changelog Cleanup)
+    Write-Host "Rewriting URLs and cleaning Changelog in .plg for GitHub..."
     $content = Get-Content $PLG_FILE -Raw
+    
+    # URL Rewriting
     $content = $content -replace [regex]::Escape($GITLAB_RAW_URL), $GITHUB_RAW_URL
+    
+    # Changelog Replacement
+    if (Test-Path "CHANGES.public.xml") {
+        $publicChanges = Get-Content "CHANGES.public.xml" -Raw
+        $content = $content -replace '(?s)<CHANGES>.*?</CHANGES>', $publicChanges
+    }
+    
     Set-Content $PLG_FILE $content
 
     # 5. File Swapping (README)
@@ -42,6 +51,7 @@ try {
     $internalFiles = @(
         "AGENT_SKILL_UNRAID_PLUGIN.md",
         "README.public.md",
+        "CHANGES.public.xml",
         "publish-to-github.ps1",
         "debug files",
         "screen-shots",
