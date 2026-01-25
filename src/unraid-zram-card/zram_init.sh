@@ -5,7 +5,7 @@
 CONFIG="/boot/config/plugins/unraid-zram-card/settings.ini"
 
 if [ -f "$CONFIG" ]; then
-    # Parse zram_devices from ini
+    # Parse zram_devices from ini (Format: size:algo,size:algo)
     ZRAM_DEVICES=$(grep "zram_devices=" "$CONFIG" | cut -d'"' -f2)
     
     if [ ! -z "$ZRAM_DEVICES" ]; then
@@ -14,10 +14,16 @@ if [ -f "$CONFIG" ]; then
         
         # Split by comma
         IFS=',' read -ra ADDR <<< "$ZRAM_DEVICES"
-        for size in "${ADDR[@]}"; do
-            echo "Creating ZRAM device of size $size..."
-            DEV=$(zramctl --find --size "$size")
+        for entry in "${ADDR[@]}"; do
+            # Split entry by colon (size:algo)
+            SIZE="${entry%%:*}"
+            ALGO="${entry##*:}"
+            
+            echo "Creating ZRAM device ($SIZE, $ALGO)..."
+            DEV=$(zramctl --find)
             if [ ! -z "$DEV" ]; then
+                zramctl --algorithm "$ALGO" "$DEV"
+                zramctl --size "$SIZE" "$DEV"
                 mkswap "$DEV"
                 swapon "$DEV" -p 100
             fi
