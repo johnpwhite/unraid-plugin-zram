@@ -8,16 +8,15 @@ You are an expert Unraid Plugin Developer. You specialize in creating robust, vi
 ## 1. The Installer (`.plg` XML)
 
 ### The "Hybrid XML" Strategy (Installation Stability)
-Unraid's pre-installer parser is strict and can fail with "XML parse error" or "XML file does not exist" if the root tag is complex.
+Unraid's pre-installer parser is strict and can fail with "XML parse error" if the root tag is complex.
 *   **Header Attributes**: Always **hardcode** `pluginURL`, `name`, and `version` inside the `<PLUGIN>` tag as literal strings. Do not use recursive entities here.
 *   **Payload Entities**: Use entities (`&gitURL;`, `&emhttp;`) for the `<FILE>` tags to keep the file list maintainable.
 *   **Ampersands**: NEVER use a raw `&` in `<CHANGES>` or script blocks. Use `&amp;`.
 
-### Hybrid Deployment (Online & Local)
-To support servers without internet access (e.g., local GitLab or air-gapped), implement a hybrid download script:
-1.  Check for files in `/boot/config/plugins/plugin-name/`.
-2.  If found, `cp` them to the destination.
-3.  If missing, `wget` from the remote repository.
+### Hybrid Deployment (Air-Gap Support)
+Unraid 7 has **removed the `installplg` command**. Manual installation is now done by browsing to the `.plg` file via the WebUI. To support air-gapped servers:
+*   **Multi-Path Detection**: Your installer script should check for local source files in multiple locations (e.g., root of the flash folder, `js/` subfolders, or repository structure) to be resilient to how a user might have manually copied the files.
+*   **Fallbacks**: Only attempt `wget` if the local file is absolutely missing.
 
 ---
 
@@ -25,50 +24,48 @@ To support servers without internet access (e.g., local GitLab or air-gapped), i
 
 ### Critical: Avoid Nested Tables
 **NEVER use `<table>` or `<tbody>` tags inside a dashboard card.**
-*   **Reason**: Unraid’s `dynamix.js` recursively scans the DOM for `tbody` elements to enable drag-and-drop. It assumes every `tbody` is a top-level tile and tries to read properties like `md5`.
-*   **Symptom**: `TypeError: Cannot read properties of undefined (reading 'md5')` crashes the entire dashboard.
-*   **Solution**: Use **CSS Grid** or **Flexbox** with `<div>` elements for all layout and tabular data.
+*   **Reason**: Unraid’s `dynamix.js` recursively scans the DOM for `tbody` elements for drag-and-drop logic. A nested table triggers a JS crash: `TypeError: Cannot read properties of undefined (reading 'md5')`.
+*   **Solution**: Use **CSS Grid** or **Flexbox** with `<div>` elements for all tabular data.
 
 ### The "Function Pattern"
-Wrap all PHP card logic in a unique function. Use `ob_start()` and `ob_get_clean()` to return the HTML as a string. This prevents variable scope pollution and "Header already sent" errors.
+Wrap card logic in a unique function returned via `ob_get_clean()`. This prevents variable scope pollution and "Header already sent" errors.
 
 ---
 
-## 3. UI/UX and Styling
+## 3. UI/UX and Charting
+
+### Chart.js Visual Precision
+When charting human-readable units (Bytes, GB, etc.) on the Y-Axis:
+*   **Decimal Precision**: Ensure labels have at least 1 decimal place (e.g., `1.3 GB`) for values > 1MB. Using whole numbers only (`1 GB`) causes visual misalignment where data points appear to "float" above their labels.
+*   **Grace/Headroom**: Add a `grace: '10%'` factor to the Y-axis. This prevents the data line from touching the top edge of the card, providing "breathing room" for a better UX.
 
 ### Theme Integration
-Unraid's system styles are aggressive. To maintain a consistent custom theme (e.g., specific orange-outline buttons):
-*   **Specificity**: Use specific classes and `!important` to override system defaults.
-*   **Button Elements**: Prefer `<button type="submit">` over `<input type="submit">`. System styles often target `input` elements more heavily, making them harder to re-style.
-*   **Input Visibility**: Explicitly set `background` and `color` for `:focus` states to ensure users can see what they are typing in dark themes.
+*   **Button Elements**: Prefer `<button>` over `<input type="submit">`. System styles target `input` more heavily, making them harder to override.
+*   **Input Visibility**: Explicitly set `background` and `color` for `:focus` states to ensure users can see text in dark themes.
 
 ---
 
 ## 4. Backend and Persistence
 
 ### System Tools
-*   **Prefer JSON**: Use `--json` output flags for system tools (e.g., `zramctl`, `lsblk`). It is far more robust than parsing raw text columns.
+*   **Prefer JSON**: Use `--json` output flags for tools like `zramctl`. 
 *   **Combined Commands**: If a tool requires multiple parameters to initialize (like `--size` and `--algo`), execute them in a **single combined call** to satisfy kernel state requirements.
 
 ### Boot Persistence
-Re-apply settings on every boot without modifying the system `go` file:
-1.  Create an initialization script (e.g., `init.sh`).
-2.  Trigger this script via the `.plg` `<INSTALL>` phase.
-3.  Store configuration in `/boot/config/plugins/plugin-name/settings.ini`.
+Trigger an initialization script via the `.plg` `<INSTALL>` phase to re-apply settings stored in `/boot/config/plugins/plugin-name/settings.ini`.
 
 ---
 
 ## 5. Robust Uninstallation
 
 ### The "Golden Path"
-Use the `<FILE Run="/bin/bash" Method="remove">` pattern. This ensures the script is executed by the system's plugin manager during the removal request.
+Use the `<FILE Run="/bin/bash" Method="remove">` pattern. 
 
 | Action | Best Practice | Why? |
 | :--- | :--- | :--- |
-| **Output** | Use `tee` | Standard redirection (`exec > log`) hides progress from the WebUI, causing the dialogue to hang. |
+| **Output** | Plain Text | Complex redirection (`exec > log`) or silent scripts can cause the Unraid 7 uninstall dialogue to hang. Talkative scripts allow the UI to track progress. |
 | **Nchan/Nginx** | Do NOT reload | Reloading the web server during an uninstall request drops the connection and hangs the dialogue. |
-| **Cleanup** | `rm -rf` subfolders | Always purge `/usr/local/emhttp/plugins/plugin-name/`. |
-| **Logging** | Dedicated subfolder | Store logs in `/tmp/plugin-name/` to keep `/tmp` clean. |
+| **Cleanup** | `rm -rf` | Purge `/usr/local/emhttp/plugins/plugin-name/` and `/tmp/plugin-name/`. |
 
 ---
 
@@ -78,6 +75,5 @@ Use the `<FILE Run="/bin/bash" Method="remove">` pattern. This ensures the scrip
 | :--- | :--- | :--- |
 | XML Parse Error | Raw `&` or recursive entities | Use `&amp;` and hardcode header attributes. |
 | Dashboard Crashes | Nested `<tbody>` | Replace nested tables with `div` grids. |
-| Settings don't apply | Algorithm set before Size | Combine `size` and `algo` into one `zramctl` call. |
-| Uninstall hangs | No output or Nginx reload | Remove reload commands and use `tee` for logs. |
-| Wrong button color | System style override | Use `!important` and `button` tags. |
+| Chart misaligned | Rounding in Y-Axis labels | Add decimal precision to label formatting. |
+| Uninstall hangs | Silent script or Nginx reload | Remove reload commands and ensure script echos progress. |
