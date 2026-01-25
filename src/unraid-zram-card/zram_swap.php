@@ -38,11 +38,13 @@ if ($action === 'create') {
     if ($ret === 0) {
         $dev = trim(end($out));
         
-        // 2. Set Algorithm
-        exec("zramctl --algorithm " . escapeshellarg($algo) . " $dev 2>&1", $out, $ret);
-        
-        // 3. Set Size
+        // 2. Set Size FIRST (Initialize device)
         exec("zramctl --size " . escapeshellarg($size) . " $dev 2>&1", $out, $ret);
+        if ($ret !== 0) file_put_contents('/tmp/zram_debug.log', "Size Fail: " . implode(" ", $out) . "\n", FILE_APPEND);
+
+        // 3. Set Algorithm (While device is un-formatted but sized)
+        exec("zramctl --algorithm " . escapeshellarg($algo) . " $dev 2>&1", $out, $ret);
+        if ($ret !== 0) file_put_contents('/tmp/zram_debug.log', "Algo Fail: " . implode(" ", $out) . "\n", FILE_APPEND);
         
         // 4. Swap
         exec("mkswap $dev 2>&1", $out, $ret);

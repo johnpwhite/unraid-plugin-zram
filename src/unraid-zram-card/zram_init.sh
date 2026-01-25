@@ -22,8 +22,8 @@ if [ -f "$CONFIG" ]; then
             echo "Creating ZRAM device ($SIZE, $ALGO)..."
             DEV=$(zramctl --find)
             if [ ! -z "$DEV" ]; then
-                zramctl --algorithm "$ALGO" "$DEV"
                 zramctl --size "$SIZE" "$DEV"
+                zramctl --algorithm "$ALGO" "$DEV"
                 mkswap "$DEV"
                 swapon "$DEV" -p 100
             fi
