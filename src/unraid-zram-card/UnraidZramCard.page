@@ -42,7 +42,8 @@ $zram_raw = [];
 exec('zramctl --noheadings --raw --output NAME,DISKSIZE,DATA,COMPR,ALGORITHM', $zram_raw);
 $devices = [];
 foreach ($zram_raw as $line) {
-    $parts = preg_split('/\s+/', trim($line));
+    $parts = preg_split('/
++/', trim($line));
     if (count($parts) >= 2) {
         $devices[] = ['name' => $parts[0], 'size' => $parts[1], 'algo' => $parts[4] ?? ''];
     }
@@ -53,7 +54,8 @@ $algos = ['zstd', 'lz4', 'lzo', 'deflate', '842'];
 if (file_exists('/sys/block/zram0/comp_algorithm')) {
     $raw_algos = file_get_contents('/sys/block/zram0/comp_algorithm');
     $raw_algos = str_replace(['[', ']'], '', $raw_algos);
-    $algos = preg_split('/\s+/', trim($raw_algos));
+    $algos = preg_split('/
++/', trim($raw_algos));
 }
 ?>
 
@@ -76,14 +78,14 @@ if (file_exists('/sys/block/zram0/comp_algorithm')) {
     .dev-table td { padding: 8px 5px; border-bottom: 1px solid #333; font-size: 0.9em; }
     
     .action-row { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 4px; margin-bottom: 20px; }
-    #console-log { height: 300px; overflow-y: auto; color: #00ff00; }
+    #console-log { height: 350px; overflow-y: auto; color: #00ff00; }
     .log-entry { margin-bottom: 4px; border-bottom: 1px solid #222; padding-bottom: 2px; }
     .log-err { color: #ff5555; }
-    .log-cmd { color: #5555ff; }
+    .log-cmd { color: #5555ff; font-weight: bold; }
+    .log-debug { color: #888; padding-left: 10px; font-style: italic; }
 </style>
 
 <div class="zram-main-grid">
-    <!-- Left: Configuration -->
     <div class="zram-config-left">
         <div class="section">
             <h3>ZRAM Swap Management</h3>
@@ -103,25 +105,25 @@ if (file_exists('/sys/block/zram0/comp_algorithm')) {
                 </div>
                 <div>
                     <button type="button" class="zram-btn btn-create" onclick="manageZram('create')">Add Device</button>
-                    <button type="button" class="zram-btn btn-remove" onclick="manageZram('remove', '')">Clear All</button>
+                    <button type="button" class="zram-btn btn-remove" onclick="manageZram('remove', '')">Remove All</button>
                 </div>
             </div>
 
             <h4 style="margin-top: 10px;">Active Devices: 
                 <?php if (count($devices) > 0): ?>
                     <span class="status-badge status-active">Active (<?php echo count($devices); ?>)</span>
-                <?php else: ?>
+                <?php else:
+                ?>
                     <span class="status-badge status-none">None</span>
                 <?php endif; ?>
             </h4>
             
             <?php if (count($devices) > 0): ?>
                 <table class="dev-table">
-                    <thead>
-                        <tr><th>Device</th><th>Size</th><th>Algorithm</th><th style="text-align: right;">Action</th></tr>
-                    </thead>
+                    <thead><tr><th>Device</th><th>Size</th><th>Algorithm</th><th style="text-align: right;">Action</th></tr></thead>
                     <tbody>
-                        <?php foreach ($devices as $dev): ?>
+                        <?php foreach ($devices as $dev):
+                        ?>
                         <tr>
                             <td><strong>/dev/<?php echo $dev['name']; ?></strong></td>
                             <td><?php echo $dev['size']; ?></td>
@@ -141,50 +143,50 @@ if (file_exists('/sys/block/zram0/comp_algorithm')) {
                 <h3>Dashboard Card Configuration</h3>
                 <dl>
                     <dt>Enable Dashboard Card:</dt>
-                    <dd>
-                        <select name="enabled">
-                            <option value="yes" <?php echo ($settings['enabled'] == 'yes') ? 'selected' : ''; ?>>Yes</option>
-                            <option value="no" <?php echo ($settings['enabled'] == 'no') ? 'selected' : ''; ?>>No</option>
-                        </select>
-                    </dd>
+                    <dd><select name="enabled"><option value="yes" <?php echo ($settings['enabled'] == 'yes') ? 'selected' : ''; ?>>Yes</option><option value="no" <?php echo ($settings['enabled'] == 'no') ? 'selected' : ''; ?>>No</option></select></dd>
                     <dt>Refresh Interval (ms):</dt>
                     <dd><input type="number" name="refresh_interval" value="<?php echo htmlspecialchars($settings['refresh_interval']); ?>" min="1000"></dd>
                     <dt>Default Swap Size:</dt>
                     <dd><input type="text" name="swap_size" value="<?php echo htmlspecialchars($settings['swap_size']); ?>"></dd>
                     <dt>Default Algorithm:</dt>
-                    <dd>
-                        <select name="compression_algo">
-                            <?php foreach ($algos as $a): ?>
-                                <option value="<?php echo $a; ?>" <?php echo ($settings['compression_algo'] == $a) ? 'selected' : ''; ?>><?php echo $a; ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </dd>
+                    <dd><select name="compression_algo"><?php foreach ($algos as $a): ?><option value="<?php echo $a; ?>" <?php echo ($settings['compression_algo'] == $a) ? 'selected' : ''; ?>><?php echo $a; ?></option><?php endforeach; ?></select></dd>
                 </dl>
             </div>
             <div class="section"><input type="submit" name="save_settings" value="Save Settings"></div>
         </form>
     </div>
 
-    <!-- Right: Console Output -->
     <div class="zram-console-right">
         <h4 style="margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 5px;">Command Console</h4>
-        <div id="console-log">
-            <div class="log-entry">Console initialized. Ready for commands...</div>
-        </div>
+        <div id="console-log"></div>
         <div style="margin-top: 10px; border-top: 1px solid #444; padding-top: 10px;">
-            <button class="zram-btn" style="background: #444; color: #fff; width: 100%;" onclick="document.getElementById('console-log').innerHTML = ''">Clear Console</button>
+            <button class="zram-btn" style="background: #444; color: #fff; width: 100%;" onclick="clearPersistentLogs()">Clear Console</button>
         </div>
     </div>
 </div>
 
 <script>
-function addLog(msg, type = '') {
+function renderLog(entry) {
     const log = document.getElementById('console-log');
-    const entry = document.createElement('div');
-    entry.className = 'log-entry ' + (type ? 'log-' + type : '');
-    entry.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
-    log.appendChild(entry);
+    const div = document.createElement('div');
+    div.className = 'log-entry ' + (entry.type ? 'log-' + entry.type : '');
+    div.innerText = `[${entry.time}] ${entry.msg}`;
+    log.appendChild(div);
     log.scrollTop = log.scrollHeight;
+}
+
+function addLog(msg, type = '') {
+    const entry = { time: new Date().toLocaleTimeString(), msg: msg, type: type };
+    let logs = JSON.parse(sessionStorage.getItem('zram_console_logs') || '[]');
+    logs.push(entry);
+    sessionStorage.setItem('zram_console_logs', JSON.stringify(logs));
+    renderLog(entry);
+}
+
+function clearPersistentLogs() {
+    sessionStorage.removeItem('zram_console_logs');
+    document.getElementById('console-log').innerHTML = '';
+    addLog('Console cleared.');
 }
 
 function manageZram(action, device) {
@@ -192,7 +194,7 @@ function manageZram(action, device) {
     const algo = document.getElementById('swap_algo_val').value;
     const btn = event.target;
     
-    addLog(`Initiating ${action}...`, 'cmd');
+    addLog(`Initiating ${action} (Target: ${device || 'ALL'})...`, 'cmd');
     btn.disabled = true;
 
     $.post('/plugins/unraid-zram-card/zram_swap.php', {
@@ -212,11 +214,23 @@ function manageZram(action, device) {
 
         if (data.success) {
             addLog(`Completed: ${data.message}`);
-            setTimeout(() => location.reload(), 2000);
+            setTimeout(() => location.reload(), 3000);
         } else {
-            addLog(`CRITICAL: ${data.message}`, 'err');
+            addLog(`CRITICAL ERROR: ${data.message}`, 'err');
             btn.disabled = false;
         }
+    }).fail(function() {
+        addLog('Request failed (Server Error)', 'err');
+        btn.disabled = false;
     });
 }
+
+$(function() {
+    const logs = JSON.parse(sessionStorage.getItem('zram_console_logs') || '[]');
+    if (logs.length === 0) {
+        addLog('Console initialized. Ready for commands...');
+    } else {
+        logs.forEach(renderLog);
+    }
+});
 </script>
