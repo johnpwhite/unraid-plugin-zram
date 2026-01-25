@@ -2,25 +2,22 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "unraid-zram-card">
 <!ENTITY author    "John White">
-<!ENTITY version   "2026.01.25.49">
+<!ENTITY version   "2026.01.25.50">
 <!ENTITY launch    "Settings/UnraidZramCard">
 <!ENTITY gitURL    "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master">
 <!ENTITY pluginURL "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/unraid-zram-card.plg">
 <!ENTITY boot      "/boot/config/plugins/unraid-zram-card">
 <!ENTITY emhttp    "/usr/local/emhttp/plugins/unraid-zram-card">
 ]>
-<PLUGIN name="unraid-zram-card" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.1" support="&gitURL;/src/unraid-zram-card/HELP.md">
+<PLUGIN name="unraid-zram-card" author="John White" version="2026.01.25.50" launch="Settings/UnraidZramCard" pluginURL="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/unraid-zram-card.plg" min="6.12.1" support="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/src/unraid-zram-card/HELP.md">
 
 <CHANGES>
+## 2026.01.25.50
+- Fix: Resolved uninstallation hang by restoring stdout/stderr output to the WebUI.
+- Fix: Removed disruptive Nginx reload during removal to prevent connection drops.
+- Design: Cleaned up uninstall logging to use 'tee' for simultaneous console and file output.
 ## 2026.01.25.49
-- Design: Forced orange theme on Save button via inline styles to ensure visibility.
-## 2026.01.25.48
-- Fix: Rewrote removal script using the Method="remove" standard for guaranteed execution.
-- Fix: Corrected "Apply &amp; Save" button CSS specificity to ensure orange theme persists.
-- Fix: Verified all logging paths point to /tmp/unraid-zram-card/.
-## 2026.01.25.47
-- Fix: Consolidated ALL plugin logging to /tmp/unraid-zram-card/ directory.
-- Fix: Updated UnraidZramDash.page logging.
+- Design: Forced orange theme on Save button.
 </CHANGES>
 
 <!-- 1. HYBRID INSTALLER SCRIPT -->
@@ -89,48 +86,42 @@ echo "unraid-zram-card installed and ZRAM re-applied if configured."
 </INSTALL>
 
 <!-- 3. REMOVE -->
-<FILE Run="/bin/bash" Method="remove">
-<INLINE>
-# Robust removal script for unraid-zram-card
+<REMOVE>
+#!/bin/bash
+# Removal script for unraid-zram-card
 LOG_DIR="/tmp/unraid-zram-card"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/uninstall.log"
 
-{
-    echo "--- UNINSTALL START: $(date) ---"
-    NAME="unraid-zram-card"
-    PLUGIN_DIR="/usr/local/emhttp/plugins/$NAME"
-    
-    # 1. Stop ZRAM swap
-    if [ -f "$PLUGIN_DIR/zram_swap.php" ]; then
-        echo "Stopping ZRAM swap..."
-        php "$PLUGIN_DIR/zram_swap.php" action=remove
-    fi
+echo "--- UNINSTALL START: $(date) ---" | tee "$LOG_FILE"
+NAME="unraid-zram-card"
+PLUGIN_DIR="/usr/local/emhttp/plugins/$NAME"
 
-    # 2. Remove emhttp files
-    echo "Deleting plugin directory..."
-    rm -rf "$PLUGIN_DIR"
+# 1. Stop ZRAM swap
+if [ -f "$PLUGIN_DIR/zram_swap.php" ]; then
+    echo "Stopping ZRAM swap..." | tee -a "$LOG_FILE"
+    php "$PLUGIN_DIR/zram_swap.php" action=remove 2&gt;&amp;1 | tee -a "$LOG_FILE"
+fi
 
-    # 3. Purge package manifest
-    echo "Removing package manifest..."
-    removepkg "$NAME"
+# 2. Remove emhttp files
+echo "Deleting plugin directory..." | tee -a "$LOG_FILE"
+rm -rf "$PLUGIN_DIR"
 
-    # 4. Cleanup settings (Optional - keeping config by default is common, but guide says remove)
-    # rm -rf "/boot/config/plugins/$NAME"
+# 3. Purge package manifest
+echo "Removing package manifest..." | tee -a "$LOG_FILE"
+removepkg "$NAME" 2&gt;&amp;1 | tee -a "$LOG_FILE"
 
-    # 5. Refresh UI
-    echo "Updating plugin cache and reloading Nginx..."
-    if [ -f /usr/local/sbin/update_plugin_cache ]; then
-        /usr/local/sbin/update_plugin_cache
-    fi
-    /etc/rc.d/rc.nginx reload
+# 4. Cleanup settings (Optional - following guide)
+# rm -rf "/boot/config/plugins/$NAME"
 
-    echo "--- UNINSTALL COMPLETE ---"
-} &gt; "$LOG_FILE" 2&gt;&amp;1
+# 5. Refresh UI Cache
+echo "Refreshing UI cache..." | tee -a "$LOG_FILE"
+if [ -f /usr/local/sbin/update_plugin_cache ]; then
+    /usr/local/sbin/update_plugin_cache
+fi
 
-echo "Uninstallation finished. Log: $LOG_FILE"
+echo "--- UNINSTALL COMPLETE ---" | tee -a "$LOG_FILE"
 exit 0
-</INLINE>
-</FILE>
+</REMOVE>
 
 </PLUGIN>
