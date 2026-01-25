@@ -20,7 +20,7 @@ Search for **"Unraid ZRAM"** in the Apps tab.
 
 ### Method 2: Manual URL
 Copy the link below and paste it into the **Plugins > Install Manager** tab:
-`https://github.com/johner/unraid-zram-card/raw/main/unraid-zram-card.plg`
+`https://github.com/johnpwhite/unraid-plugin-zram/raw/main/unraid-zram-card.plg`
 
 ## Usage
 

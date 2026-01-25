@@ -2,8 +2,8 @@
 # Automates the release from Private GitLab to Public GitHub
 
 # --- CONFIGURATION ---
-$GITHUB_USER = "johner" # Change this to your GitHub username
-$REPO_NAME = "unraid-zram-card"
+$GITHUB_USER = "johnpwhite"
+$REPO_NAME = "unraid-plugin-zram"
 $PLG_FILE = "unraid-zram-card.plg"
 $GITHUB_RAW_URL = "https://github.com/$GITHUB_USER/$REPO_NAME/raw/main"
 $GITLAB_RAW_URL = "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master"
