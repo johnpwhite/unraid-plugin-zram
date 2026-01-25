@@ -1,6 +1,6 @@
 <?php
 // zram_swap.php
-// Backend logic for managing ZRAM swap devices with algorithm support
+// Backend logic with detailed execution logging
 
 header('Content-Type: application/json');
 
@@ -8,9 +8,19 @@ $action = $_POST['action'] ?? '';
 $size = $_POST['size'] ?? '1G';
 $algo = $_POST['algo'] ?? 'zstd';
 $device = $_POST['device'] ?? '';
-$response = ['success' => false, 'message' => 'Invalid action'];
 
 $configFile = "/boot/config/plugins/unraid-zram-card/settings.ini";
+$logs = [];
+
+function run_cmd($cmd, &$logs) {
+    exec($cmd . " 2>&1", $out, $ret);
+    $logs[] = [
+        'cmd' => $cmd,
+        'output' => implode(" ", $out),
+        'status' => $ret
+    ];
+    return $ret;
+}
 
 function get_zram_settings($file) {
     $defaults = ['enabled' => 'yes', 'refresh_interval' => '3000', 'zram_devices' => '', 'swap_size' => '1G', 'compression_algo' => 'zstd'];
@@ -31,58 +41,62 @@ function save_zram_settings($file, $settings) {
 }
 
 if ($action === 'create') {
-    exec('modprobe zram 2>&1', $out, $ret);
+    run_cmd('modprobe zram', $logs);
     
     // 1. Find device
-    exec('zramctl --find', $out, $ret);
+    exec('zramctl --find', $find_out, $ret);
     if ($ret === 0) {
-        $dev = trim(end($out));
+        $dev = trim(end($find_out));
+        $logs[] = "Targeting device: $dev";
         
-        // 2. Set Size FIRST (Initialize device)
-        exec("zramctl --size " . escapeshellarg($size) . " $dev 2>&1", $out, $ret);
-        if ($ret !== 0) file_put_contents('/tmp/zram_debug.log', "Size Fail: " . implode(" ", $out) . "\n", FILE_APPEND);
-
-        // 3. Set Algorithm (While device is un-formatted but sized)
-        exec("zramctl --algorithm " . escapeshellarg($algo) . " $dev 2>&1", $out, $ret);
-        if ($ret !== 0) file_put_contents('/tmp/zram_debug.log', "Algo Fail: " . implode(" ", $out) . "\n", FILE_APPEND);
+        // 2. Reset (Ensures clean state)
+        run_cmd("zramctl --reset $dev", $logs);
+        usleep(500000); // 0.5s pause
         
-        // 4. Swap
-        exec("mkswap $dev 2>&1", $out, $ret);
-        exec("swapon $dev -p 100 2>&1", $out, $ret);
+        // 3. Set Algorithm
+        run_cmd("zramctl --algorithm " . escapeshellarg($algo) . " $dev", $logs);
         
-        // Update Persistence (Format: size:algo,size:algo)
-        $settings = get_zram_settings($configFile);
-        $devices = array_filter(explode(',', $settings['zram_devices']));
-        $devices[] = "$size:$algo";
-        $settings['zram_devices'] = implode(',', $devices);
-        save_zram_settings($configFile, $settings);
+        // 4. Set Size
+        run_cmd("zramctl --size " . escapeshellarg($size) . " $dev", $logs);
         
-        $response = ['success' => true, 'message' => "Created ZRAM ($size, $algo) on $dev"];
+        // 5. Swap
+        run_cmd("mkswap $dev", $logs);
+        $s_ret = run_cmd("swapon $dev -p 100", $logs);
+        
+        if ($s_ret === 0) {
+            $settings = get_zram_settings($configFile);
+            $devices = array_filter(explode(',', $settings['zram_devices']));
+            $devices[] = "$size:$algo";
+            $settings['zram_devices'] = implode(',', $devices);
+            save_zram_settings($configFile, $settings);
+            
+            echo json_encode(['success' => true, 'message' => "Created $dev", 'logs' => $logs]);
+        } else {
+            echo json_encode(['success' => false, 'message' => "Swap activation failed", 'logs' => $logs]);
+        }
     } else {
-        $response = ['success' => false, 'message' => "Failed to find zram device"];
+        echo json_encode(['success' => false, 'message' => "No free ZRAM device", 'logs' => $logs]);
     }
 } 
 
 elseif ($action === 'remove') {
     if (empty($device)) {
-        // Remove ALL
         exec('zramctl --noheadings --raw --output NAME', $devs);
         foreach ($devs as $d) {
             $d = trim($d);
             if ($d) {
-                exec("swapoff /dev/$d 2>/dev/null");
-                exec("zramctl --reset /dev/$d 2>/dev/null");
+                run_cmd("swapoff /dev/$d", $logs);
+                run_cmd("zramctl --reset /dev/$d", $logs);
             }
         }
         $settings = get_zram_settings($configFile);
         $settings['zram_devices'] = '';
         save_zram_settings($configFile, $settings);
-        $response = ['success' => true, 'message' => "Removed all ZRAM devices"];
+        echo json_encode(['success' => true, 'message' => "Cleared all", 'logs' => $logs]);
     } else {
-        // Remove SPECIFIC
         $devPath = (strpos($device, '/dev/') === false) ? "/dev/$device" : $device;
-        exec("swapoff $devPath 2>&1");
-        exec("zramctl --reset $devPath 2>&1");
+        run_cmd("swapoff $devPath", $logs);
+        run_cmd("zramctl --reset $devPath", $logs);
         
         $settings = get_zram_settings($configFile);
         $devices = array_filter(explode(',', $settings['zram_devices']));
@@ -90,9 +104,7 @@ elseif ($action === 'remove') {
         $settings['zram_devices'] = implode(',', $devices);
         save_zram_settings($configFile, $settings);
         
-        $response = ['success' => true, 'message' => "Removed $device"];
+        echo json_encode(['success' => true, 'message' => "Removed $device", 'logs' => $logs]);
     }
 }
-
-echo json_encode($response);
 ?>

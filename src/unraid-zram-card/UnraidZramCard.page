@@ -6,7 +6,7 @@ Icon="database"
 $configFile = "/boot/config/plugins/unraid-zram-card/settings.ini";
 $defaults = [
     'enabled' => 'yes', 
-    'refresh_interval' => '3000',
+    'refresh_interval' => '3000', 
     'swap_size' => '1G',
     'zram_devices' => '',
     'compression_algo' => 'zstd'
@@ -52,147 +52,169 @@ foreach ($zram_raw as $line) {
 $algos = ['zstd', 'lz4', 'lzo', 'deflate', '842'];
 if (file_exists('/sys/block/zram0/comp_algorithm')) {
     $raw_algos = file_get_contents('/sys/block/zram0/comp_algorithm');
-    // Format: lzo lz4 zstd [deflate] 842
     $raw_algos = str_replace(['[', ']'], '', $raw_algos);
     $algos = preg_split('/\s+/', trim($raw_algos));
 }
 ?>
 
 <style>
-    .zram-container { max-width: 800px; }
+    .zram-main-grid { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+    .zram-config-left { flex: 1; min-width: 450px; }
+    .zram-console-right { width: 350px; background: #1a1a1a; border-radius: 4px; border: 1px solid #333; padding: 15px; color: #aaa; font-family: monospace; font-size: 0.85em; }
+    
     .zram-btn { padding: 5px 12px; border-radius: 4px; cursor: pointer; border: none; font-weight: bold; margin-right: 5px; font-size: 0.9em; display: inline-block; vertical-align: middle; }
     .btn-create { background-color: #7fba59; color: white; }
     .btn-remove { background-color: #d9534f; color: white; }
     .btn-small { padding: 2px 8px; font-size: 0.8em; }
+    
     .status-badge { padding: 3px 10px; border-radius: 12px; font-size: 0.85em; display: inline-block; }
     .status-active { background: #7fba59; color: white; }
     .status-none { background: #666; color: white; }
+    
     .dev-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
     .dev-table th { text-align: left; border-bottom: 1px solid #444; padding: 5px; opacity: 0.7; font-size: 0.85em; }
     .dev-table td { padding: 8px 5px; border-bottom: 1px solid #333; font-size: 0.9em; }
-    .action-row { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 4px; margin-bottom: 20px; display: inline-block; min-width: 400px; }
+    
+    .action-row { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 4px; margin-bottom: 20px; }
+    #console-log { height: 300px; overflow-y: auto; color: #00ff00; }
+    .log-entry { margin-bottom: 4px; border-bottom: 1px solid #222; padding-bottom: 2px; }
+    .log-err { color: #ff5555; }
+    .log-cmd { color: #5555ff; }
 </style>
 
-<div class="zram-container">
-    <div class="section">
-        <h3>ZRAM Swap Management</h3>
-        <p style="margin-bottom: 15px; opacity: 0.8;">Manage individual ZRAM swap devices. Changes are persisted and re-applied on boot.</p>
-        
-        <div class="action-row">
-            <div style="margin-bottom: 10px;">
-                <span style="display: inline-block; width: 100px;">Size:</span>
-                <input type="text" id="swap_size_val" value="<?php echo htmlspecialchars($settings['swap_size']); ?>" style="width: 80px; text-align: center;">
-                <span style="opacity: 0.6; font-size: 0.8em;">(e.g. 1G, 512M)</span>
-            </div>
-            <div style="margin-bottom: 15px;">
-                <span style="display: inline-block; width: 100px;">Algorithm:</span>
-                <select id="swap_algo_val" style="width: 80px;">
-                    <?php foreach ($algos as $a): ?>
-                        <option value="<?php echo $a; ?>" <?php echo ($settings['compression_algo'] == $a) ? 'selected' : ''; ?>><?php echo $a; ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <div>
-                <button type="button" class="zram-btn btn-create" onclick="manageZram('create')">Add Device</button>
-                <button type="button" class="zram-btn btn-remove" onclick="manageZram('remove', '')">Clear All</button>
-            </div>
-        </div>
-
-        <h4 style="margin-top: 10px;">Active Devices: 
-            <?php if (count($devices) > 0): ?>
-                <span class="status-badge status-active">Active (<?php echo count($devices); ?>)</span>
-            <?php else:
-            ?>
-                <span class="status-badge status-none">None</span>
-            <?php endif; ?>
-        </h4>
-        
-        <?php if (count($devices) > 0): ?>
-            <table class="dev-table">
-                <thead>
-                    <tr>
-                        <th>Device</th>
-                        <th>Size</th>
-                        <th>Algorithm</th>
-                        <th style="text-align: right;">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($devices as $dev): ?>
-                    <tr>
-                        <td><strong>/dev/<?php echo $dev['name']; ?></strong></td>
-                        <td><?php echo $dev['size']; ?></td>
-                        <td><span style="background: rgba(0,0,0,0.2); padding: 2px 5px; border-radius: 3px; font-family: monospace;"><?php echo $dev['algo']; ?></span></td>
-                        <td style="text-align: right;">
-                            <button type="button" class="zram-btn btn-remove btn-small" onclick="manageZram('remove', '<?php echo $dev['name']; ?>')">Remove</button>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        <?php endif; ?>
-    </div>
-
-    <form method="post" action="/Settings/UnraidZramCard">
+<div class="zram-main-grid">
+    <!-- Left: Configuration -->
+    <div class="zram-config-left">
         <div class="section">
-            <h3>Dashboard Card Configuration</h3>
-            <dl>
-                <dt>Enable Dashboard Card:</dt>
-                <dd>
-                    <select name="enabled">
-                        <option value="yes" <?php echo ($settings['enabled'] == 'yes') ? 'selected' : ''; ?>>Yes</option>
-                        <option value="no" <?php echo ($settings['enabled'] == 'no') ? 'selected' : ''; ?>>No</option>
-                    </select>
-                </dd>
-                
-                <dt>Refresh Interval (ms):</dt>
-                <dd>
-                    <input type="number" name="refresh_interval" value="<?php echo htmlspecialchars($settings['refresh_interval']); ?>" min="1000">
-                </dd>
-
-                <dt>Default Swap Size:</dt>
-                <dd>
-                    <input type="text" name="swap_size" value="<?php echo htmlspecialchars($settings['swap_size']); ?>">
-                </dd>
-
-                <dt>Default Algorithm:</dt>
-                <dd>
-                    <select name="compression_algo">
+            <h3>ZRAM Swap Management</h3>
+            <div class="action-row">
+                <div style="margin-bottom: 10px;">
+                    <span style="display: inline-block; width: 100px;">Size:</span>
+                    <input type="text" id="swap_size_val" value="<?php echo htmlspecialchars($settings['swap_size']); ?>" style="width: 80px; text-align: center;">
+                    <span style="opacity: 0.6; font-size: 0.8em;">(e.g. 1G, 512M)</span>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <span style="display: inline-block; width: 100px;">Algorithm:</span>
+                    <select id="swap_algo_val" style="width: 80px;">
                         <?php foreach ($algos as $a): ?>
                             <option value="<?php echo $a; ?>" <?php echo ($settings['compression_algo'] == $a) ? 'selected' : ''; ?>><?php echo $a; ?></option>
                         <?php endforeach; ?>
                     </select>
-                </dd>
-            </dl>
+                </div>
+                <div>
+                    <button type="button" class="zram-btn btn-create" onclick="manageZram('create')">Add Device</button>
+                    <button type="button" class="zram-btn btn-remove" onclick="manageZram('remove', '')">Clear All</button>
+                </div>
+            </div>
+
+            <h4 style="margin-top: 10px;">Active Devices: 
+                <?php if (count($devices) > 0): ?>
+                    <span class="status-badge status-active">Active (<?php echo count($devices); ?>)</span>
+                <?php else: ?>
+                    <span class="status-badge status-none">None</span>
+                <?php endif; ?>
+            </h4>
+            
+            <?php if (count($devices) > 0): ?>
+                <table class="dev-table">
+                    <thead>
+                        <tr><th>Device</th><th>Size</th><th>Algorithm</th><th style="text-align: right;">Action</th></tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($devices as $dev): ?>
+                        <tr>
+                            <td><strong>/dev/<?php echo $dev['name']; ?></strong></td>
+                            <td><?php echo $dev['size']; ?></td>
+                            <td><span style="background: rgba(0,0,0,0.2); padding: 2px 5px; border-radius: 3px; font-family: monospace;"><?php echo $dev['algo']; ?></span></td>
+                            <td style="text-align: right;">
+                                <button type="button" class="zram-btn btn-remove btn-small" onclick="manageZram('remove', '<?php echo $dev['name']; ?>')">Remove</button>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
         </div>
-        
-        <div class="section">
-            <input type="submit" name="save_settings" value="Save Settings">
+
+        <form method="post" action="/Settings/UnraidZramCard">
+            <div class="section">
+                <h3>Dashboard Card Configuration</h3>
+                <dl>
+                    <dt>Enable Dashboard Card:</dt>
+                    <dd>
+                        <select name="enabled">
+                            <option value="yes" <?php echo ($settings['enabled'] == 'yes') ? 'selected' : ''; ?>>Yes</option>
+                            <option value="no" <?php echo ($settings['enabled'] == 'no') ? 'selected' : ''; ?>>No</option>
+                        </select>
+                    </dd>
+                    <dt>Refresh Interval (ms):</dt>
+                    <dd><input type="number" name="refresh_interval" value="<?php echo htmlspecialchars($settings['refresh_interval']); ?>" min="1000"></dd>
+                    <dt>Default Swap Size:</dt>
+                    <dd><input type="text" name="swap_size" value="<?php echo htmlspecialchars($settings['swap_size']); ?>"></dd>
+                    <dt>Default Algorithm:</dt>
+                    <dd>
+                        <select name="compression_algo">
+                            <?php foreach ($algos as $a): ?>
+                                <option value="<?php echo $a; ?>" <?php echo ($settings['compression_algo'] == $a) ? 'selected' : ''; ?>><?php echo $a; ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </dd>
+                </dl>
+            </div>
+            <div class="section"><input type="submit" name="save_settings" value="Save Settings"></div>
+        </form>
+    </div>
+
+    <!-- Right: Console Output -->
+    <div class="zram-console-right">
+        <h4 style="margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 5px;">Command Console</h4>
+        <div id="console-log">
+            <div class="log-entry">Console initialized. Ready for commands...</div>
         </div>
-    </form>
+        <div style="margin-top: 10px; border-top: 1px solid #444; padding-top: 10px;">
+            <button class="zram-btn" style="background: #444; color: #fff; width: 100%;" onclick="document.getElementById('console-log').innerHTML = ''">Clear Console</button>
+        </div>
+    </div>
 </div>
 
 <script>
+function addLog(msg, type = '') {
+    const log = document.getElementById('console-log');
+    const entry = document.createElement('div');
+    entry.className = 'log-entry ' + (type ? 'log-' + type : '');
+    entry.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    log.appendChild(entry);
+    log.scrollTop = log.scrollHeight;
+}
+
 function manageZram(action, device) {
     const size = document.getElementById('swap_size_val').value;
     const algo = document.getElementById('swap_algo_val').value;
     const btn = event.target;
-    const oldText = btn.innerText;
     
-    btn.innerText = '...';
+    addLog(`Initiating ${action}...`, 'cmd');
     btn.disabled = true;
 
     $.post('/plugins/unraid-zram-card/zram_swap.php', {
-        action: action,
-        size: size,
-        algo: algo,
-        device: device
+        action: action, size: size, algo: algo, device: device
     }, function(data) {
+        if (data.logs && Array.isArray(data.logs)) {
+            data.logs.forEach(log => {
+                if (typeof log === 'string') {
+                    addLog(log);
+                } else {
+                    const status = log.status === 0 ? 'Success' : 'Fail';
+                    addLog(`${log.cmd} -> ${status}`, log.status === 0 ? '' : 'err');
+                    if (log.output) addLog(`  > ${log.output}`, 'debug');
+                }
+            });
+        }
+
         if (data.success) {
-            location.reload();
+            addLog(`Completed: ${data.message}`);
+            setTimeout(() => location.reload(), 2000);
         } else {
-            alert('Error: ' + data.message);
-            btn.innerText = oldText;
+            addLog(`CRITICAL: ${data.message}`, 'err');
             btn.disabled = false;
         }
     });
