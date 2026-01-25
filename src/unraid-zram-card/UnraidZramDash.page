@@ -1,5 +1,5 @@
 Menu="Dashboard:0"
-Icon="server"
+Icon="unraid-zram-card.png"
 ---
 <?php
 // Debugging Logger

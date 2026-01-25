@@ -1,6 +1,6 @@
 Menu="Utilities"
 Title="Unraid ZRAM"
-Icon="database"
+Icon="unraid-zram-card.png"
 ---
 <?php
 $configFile = "/boot/config/plugins/unraid-zram-card/settings.ini";

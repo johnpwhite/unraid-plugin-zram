@@ -82,7 +82,7 @@ if (!function_exists('getZramDashboardCard')) {
                     <td>
                         <span class='tile-header'>
                             <span class='tile-header-left'>
-                                <i class='fa fa-compress f32'></i>
+                                <img src='/plugins/unraid-zram-card/unraid-zram-card.png' style='width:32px; height:32px; margin-right:10px;'>
                                 <div class='section'>
                                     <?php if ($zram_isResponsive): ?>
                                         <h3 class='tile-header-main'>ZRAM Status</h3>
