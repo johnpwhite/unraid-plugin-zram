@@ -2,16 +2,18 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "unraid-zram-card">
 <!ENTITY author    "John White">
-<!ENTITY version   "2026.01.25.62">
+<!ENTITY version   "2026.01.25.63">
 <!ENTITY launch    "Settings/UnraidZramCard">
 <!ENTITY gitURL    "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master">
 <!ENTITY pluginURL "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/unraid-zram-card.plg">
 <!ENTITY boot      "/boot/config/plugins/unraid-zram-card">
 <!ENTITY emhttp    "/usr/local/emhttp/plugins/unraid-zram-card">
 ]>
-<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.1" support="&gitURL;/src/unraid-zram-card/HELP.md" icon="unraid-zram-card.png">
+<PLUGIN name="unraid-zram-card" author="John White" version="2026.01.25.63" launch="Settings/UnraidZramCard" pluginURL="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/unraid-zram-card.plg" min="6.12.1" support="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/src/unraid-zram-card/HELP.md">
 
 <CHANGES>
+## 2026.01.25.63
+- Tweak: Updated default refresh interval to 1000ms and default swap size to 4G.
 ## 2026.01.25.62
 - Fix: Renamed icon file to unraid-zram-card.png and added icon attribute to PLUGIN tag for better system integration.
 ## 2026.01.25.61
