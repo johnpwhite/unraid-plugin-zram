@@ -15,6 +15,12 @@ LOG="$LOG_DIR/boot_init.log"
         exit 0
     fi
 
+    # Find binary paths
+    ZRAMCTL=$(which zramctl || echo "/sbin/zramctl")
+    MKSWAP=$(which mkswap || echo "/sbin/mkswap")
+    SWAPON=$(which swapon || echo "/sbin/swapon")
+    MODPROBE=$(which modprobe || echo "/sbin/modprobe")
+
     # Parse zram_devices from ini (Format: size:algo,size:algo)
     ZRAM_DEVICES=$(grep "zram_devices=" "$CONFIG" | cut -d'"' -f2)
     
@@ -24,7 +30,7 @@ LOG="$LOG_DIR/boot_init.log"
     fi
 
     echo "Initializing ZRAM devices: $ZRAM_DEVICES"
-    /sbin/modprobe zram
+    $MODPROBE zram
     
     # Split by comma
     IFS=',' read -ra ADDR <<< "$ZRAM_DEVICES"
@@ -34,12 +40,13 @@ LOG="$LOG_DIR/boot_init.log"
         ALGO="${entry##*:}"
         
         echo "Creating ZRAM device (Size: $SIZE, Algo: $ALGO)..."
-        DEV=$(/usr/bin/zramctl --find --size "$SIZE" --algorithm "$ALGO")
+        # Combine find, size, and algo into one call as required by kernel
+        DEV=$($ZRAMCTL --find --size "$SIZE" --algorithm "$ALGO")
         
         if [ ! -z "$DEV" ]; then
             echo "  > Created $DEV. Formatting as swap..."
-            /sbin/mkswap "$DEV"
-            /sbin/swapon "$DEV" -p 100
+            $MKSWAP "$DEV"
+            $SWAPON "$DEV" -p 100
             echo "  > $DEV is now active."
         else
             echo "  > ERROR: Failed to create ZRAM device for size $SIZE"
