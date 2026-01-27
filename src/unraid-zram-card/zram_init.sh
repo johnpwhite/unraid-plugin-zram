@@ -15,6 +15,12 @@ LOG="$LOG_DIR/boot_init.log"
         exit 0
     fi
 
+    # Apply Global Swappiness (Default to 100 for ZRAM performance)
+    SWAPPINESS=$(grep "swappiness=" "$CONFIG" | cut -d'"' -f2)
+    if [ -z "$SWAPPINESS" ]; then SWAPPINESS=100; fi
+    echo "Setting global vm.swappiness to $SWAPPINESS"
+    sysctl vm.swappiness=$SWAPPINESS >> "$LOG" 2>&1
+
     # Find binary paths
     ZRAMCTL=$(which zramctl || echo "/sbin/zramctl")
     MKSWAP=$(which mkswap || echo "/sbin/mkswap")

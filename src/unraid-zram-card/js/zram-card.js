@@ -5,7 +5,8 @@
     const historyLimit = 30; // Keep last 30 data points
     const historyData = {
         labels: [],
-        saved: []
+        saved: [],
+        load: []
     };
     
     // CPU Load Tracking
@@ -38,6 +39,7 @@
 
         // Unraid theme colors (approximate)
         const accentColor = '#7fba59'; // Greenish
+        const loadColor = '#e57373';   // Redish
         const gridColor = 'rgba(255, 255, 255, 0.05)';
         const textColor = '#888';
 
@@ -45,16 +47,30 @@
             type: 'line',
             data: {
                 labels: historyData.labels,
-                datasets: [{
-                    label: 'RAM Saved',
-                    data: historyData.saved,
-                    borderColor: accentColor,
-                    backgroundColor: 'rgba(127, 186, 89, 0.1)',
-                    borderWidth: 1.5,
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 0
-                }]
+                datasets: [
+                    {
+                        label: 'RAM Saved',
+                        data: historyData.saved,
+                        borderColor: accentColor,
+                        backgroundColor: 'rgba(127, 186, 89, 0.1)',
+                        borderWidth: 1.5,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'CPU Load',
+                        data: historyData.load,
+                        borderColor: loadColor,
+                        backgroundColor: 'rgba(229, 115, 115, 0.1)',
+                        borderWidth: 1.5,
+                        fill: false, // Don't fill load to avoid visual noise
+                        tension: 0.4,
+                        pointRadius: 0,
+                        yAxisID: 'y1'
+                    }
+                ]
             },
             options: {
                 responsive: true,
@@ -66,7 +82,11 @@
                         intersect: false,
                         callbacks: {
                             label: function(context) {
-                                return 'Saved: ' + formatBytes(context.parsed.y);
+                                if (context.dataset.yAxisID === 'y') {
+                                    return 'Saved: ' + formatBytes(context.parsed.y);
+                                } else {
+                                    return 'Load: ' + context.parsed.y.toFixed(1) + '%';
+                                }
                             }
                         }
                     }
@@ -74,17 +94,35 @@
                 scales: {
                     x: { display: false },
                     y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
                         beginAtZero: true,
-                        grace: '10%', // Add headroom at the top
-                        suggestedMax: 1048576, // 1MB minimum scale
+                        grace: '10%',
+                        suggestedMax: 1048576,
                         grid: { color: gridColor },
                         ticks: {
                             color: textColor,
                             font: { size: 10 },
                             maxTicksLimit: 6,
                             callback: function(value) {
-                                // Use 1 decimal for better alignment on larger scales
                                 return formatBytes(value, value >= 1048576 ? 1 : 0);
+                            }
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        min: 0,
+                        suggestedMax: 10, // Default scale to 10% so small loads are visible
+                        grid: { drawOnChartArea: false }, // No grid for secondary
+                        ticks: {
+                            color: loadColor,
+                            font: { size: 10 },
+                            maxTicksLimit: 4,
+                            callback: function(value) {
+                                return value + '%';
                             }
                         }
                     }
@@ -175,10 +213,12 @@
                 const now = new Date().toLocaleTimeString();
                 historyData.labels.push(now);
                 historyData.saved.push(aggs.memory_saved);
+                historyData.load.push(loadPct);
 
                 if (historyData.labels.length > historyLimit) {
                     historyData.labels.shift();
                     historyData.saved.shift();
+                    historyData.load.shift();
                 }
 
                 chartInstance.update();

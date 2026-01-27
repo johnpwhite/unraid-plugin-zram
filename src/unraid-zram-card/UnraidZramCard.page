@@ -7,6 +7,7 @@ $configFile = "/boot/config/plugins/unraid-zram-card/settings.ini";
 $defaults = [
     'enabled' => 'yes', 
     'refresh_interval' => '1000', 
+    'swappiness' => '100',
     'swap_size' => '4G',
     'zram_devices' => '',
     'compression_algo' => 'zstd',
@@ -17,6 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
     $settings = $defaults;
     $settings['enabled'] = ($_POST['enabled'] === 'yes') ? 'yes' : 'no';
     $settings['refresh_interval'] = intval($_POST['refresh_interval']);
+    $settings['swappiness'] = intval($_POST['swappiness']);
     $settings['swap_size'] = $_POST['swap_size'] ?: '1G';
     $settings['compression_algo'] = $_POST['compression_algo'] ?: 'zstd';
     $settings['console_visible'] = ($_POST['console_visible'] === 'yes') ? 'yes' : 'no';
@@ -30,6 +32,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
     $res = [];
     foreach($settings as $key => $val) $res[] = "$key=\"$val\"";
     file_put_contents($configFile, implode("\n", $res));
+    
+    // Apply Global Swappiness Immediately
+    exec("sysctl vm.swappiness=" . escapeshellarg($settings['swappiness']));
+    
     echo "<div class='updated'>Settings Saved</div>";
 }
 
@@ -223,6 +229,9 @@ if (file_exists('/sys/block/zram0/comp_algorithm')) {
                         
                         <dt>Refresh Interval (ms):</dt>
                         <dd><input type="number" name="refresh_interval" value="<?php echo htmlspecialchars($settings['refresh_interval']); ?>" min="1000" step="500"></dd>
+                        
+                        <dt>Swappiness (0-100):</dt>
+                        <dd><input type="number" name="swappiness" value="<?php echo htmlspecialchars($settings['swappiness']); ?>" min="0" max="100"></dd>
                         
                         <dt>Show Command Console:</dt>
                         <dd><select name="console_visible"><option value="yes" <?php echo ($settings['console_visible'] == 'yes') ? 'selected' : ''; ?>>Yes</option><option value="no" <?php echo ($settings['console_visible'] == 'no') ? 'selected' : ''; ?>>No</option></select></dd>
