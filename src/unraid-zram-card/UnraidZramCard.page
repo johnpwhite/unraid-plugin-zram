@@ -210,15 +210,6 @@ if (file_exists('/sys/block/zram0/comp_algorithm')) {
                 <button type="button" class="zram-btn btn-remove btn-small" onclick="manageZram('remove', '')">REMOVE ALL</button>
             </div>
             <div class="zram-card-body">
-                <!-- Global Swappiness -->
-                <div class="create-box" style="justify-content: space-between; padding: 8px 12px; margin-bottom: 10px; background: rgba(0,0,0,0.2);">
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <span style="color:#aaa; font-size:0.9em;"><i class="fa fa-sliders"></i> Global Swappiness:</span>
-                        <input type="number" id="live_swappiness" value="<?php echo htmlspecialchars($settings['swappiness']); ?>" min="0" max="100" style="width: 60px; text-align: center;">
-                    </div>
-                    <button type="button" class="zram-btn" onclick="updateSwappiness()">SET</button>
-                </div>
-
                 <div class="create-box">
                     <div style="display:flex; align-items:center; gap:8px; font-size:0.9em; color:#aaa;">
                         <span>Size:</span>
@@ -226,13 +217,18 @@ if (file_exists('/sys/block/zram0/comp_algorithm')) {
                     </div>
                     <div style="display:flex; align-items:center; gap:8px; font-size:0.9em; color:#aaa;">
                         <span>Algo:</span>
-                        <select id="swap_algo_val" style="width: 100px;">
+                        <select id="swap_algo_val" style="width: 80px;">
                             <?php foreach ($algos as $a): ?>
                                 <option value="<?php echo $a; ?>" <?php echo ($settings['compression_algo'] == $a) ? 'selected' : ''; ?>><?php echo $a; ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <button type="button" class="zram-btn" onclick="manageZram('create')">CREATE</button>
+                    <div style="display:flex; align-items:center; gap:8px; font-size:0.9em; color:#aaa; margin-right: auto;">
+                        <span title="Global System Swappiness (0-100)">Swappiness:</span>
+                        <input type="number" id="live_swappiness" value="<?php echo htmlspecialchars($settings['swappiness']); ?>" min="0" max="100" onchange="updateSwappiness()" style="width: 50px; text-align: center;">
+                    </div>
+                    
+                    <button type="button" class="zram-btn" onclick="manageZram('create')">CREATE DEVICE</button>
                 </div>
 
                 <table class="dev-table">
@@ -333,7 +329,7 @@ if (file_exists('/sys/block/zram0/comp_algorithm')) {
 
         <div class="zram-modal-actions">
             <button type="button" class="zram-btn btn-small" style="border-color:#555!important; color:#aaa!important;" onclick="closeModal()">CANCEL</button>
-            <button type="button" class="zram-btn btn-small" onclick="saveDeviceChanges()">APPLY CHANGES</button>
+            <button type="button" id="btn-save-device" class="zram-btn btn-small" onclick="saveDeviceChanges()">APPLY CHANGES</button>
         </div>
     </div>
 </div>
@@ -401,9 +397,13 @@ function manageZram(action, device) {
 }
 
 function updateSwappiness() {
-    const val = document.getElementById('live_swappiness').value;
-    const btn = event.target;
-    btn.disabled = true;
+    const el = document.getElementById('live_swappiness');
+    let val = parseInt(el.value);
+    // Validate
+    if (isNaN(val) || val < 0) val = 0;
+    if (val > 100) val = 100;
+    el.value = val;
+    
     addLog(`Setting Global Swappiness to ${val}...`, 'cmd');
     
     $.post('/plugins/unraid-zram-card/zram_swap.php', {
@@ -411,37 +411,46 @@ function updateSwappiness() {
     }, function(data) {
         if (data.success) addLog(data.message);
         else addLog('Error setting swappiness', 'err');
-        btn.disabled = false;
     });
-}
-
-function closeModal() {
-    document.getElementById('editModal').style.display = 'none';
 }
 
 function editDevice(name, size, algo, prio) {
     document.getElementById('edit_dev_name').value = name;
     document.getElementById('modalTitle').innerText = 'Edit ' + name;
-    document.getElementById('edit_prio').value = prio !== '?' ? prio : 100;
+    // Handle '?' or empty prio
+    if (prio === '?' || prio === '' || prio === undefined) prio = 100;
+    document.getElementById('edit_prio').value = prio;
     
     // Sync swappiness from global input
     document.getElementById('edit_swappiness').value = document.getElementById('live_swappiness').value;
     
     document.getElementById('edit_info').value = `${size} / ${algo}`;
     
+    // Reset button state
+    const btn = document.getElementById('btn-save-device');
+    if (btn) btn.disabled = false;
+    
     document.getElementById('editModal').style.display = 'flex';
 }
 
 function saveDeviceChanges() {
+    const btn = document.getElementById('btn-save-device');
     const name = document.getElementById('edit_dev_name').value;
-    const prio = document.getElementById('edit_prio').value;
+    let prio = parseInt(document.getElementById('edit_prio').value);
     const swappiness = document.getElementById('edit_swappiness').value;
+    
+    // Validate Priority
+    if (isNaN(prio)) prio = 100;
+    if (prio < -1) prio = -1;
+    if (prio > 32767) prio = 32767;
+    
+    btn.disabled = true;
     
     // 1. Update Global Swappiness if changed
     const currentSwap = document.getElementById('live_swappiness').value;
     if (swappiness != currentSwap) {
         document.getElementById('live_swappiness').value = swappiness;
-        updateSwappiness(); // Reuse existing function
+        updateSwappiness(); 
     }
     
     // 2. Update Priority
@@ -455,7 +464,11 @@ function saveDeviceChanges() {
             setTimeout(() => location.reload(), 1500);
         } else {
             addLog(`Error: ${data.message}`, 'err');
+            btn.disabled = false;
         }
+    }).fail(function() {
+        addLog('Request failed', 'err');
+        btn.disabled = false;
     });
 }
 
