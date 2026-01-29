@@ -227,6 +227,14 @@
                 initChart();
             }
 
+            // Pulse refresh icon
+            const icon = document.getElementById('zram-refresh-icon');
+            if (icon) {
+                icon.classList.remove('zram-pulse');
+                void icon.offsetWidth; // Force reflow
+                icon.classList.add('zram-pulse');
+            }
+
         } catch (error) {
             console.error('Error fetching ZRAM stats:', error);
         }

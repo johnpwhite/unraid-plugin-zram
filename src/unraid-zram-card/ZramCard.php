@@ -77,6 +77,16 @@ if (!function_exists('getZramDashboardCard')) {
             // --- 4. Render Output ---
             ob_start();
 ?>
+            <style>
+            @keyframes zram-fade-blink {
+                0% { opacity: 0.3; }
+                50% { opacity: 1; color: #7fba59; text-shadow: 0 0 2px #7fba59; }
+                100% { opacity: 0.3; }
+            }
+            .zram-pulse {
+                animation: zram-fade-blink 0.6s ease-in-out;
+            }
+            </style>
             <tbody title='ZRAM Usage'>
                 <tr>
                     <td>
@@ -95,6 +105,10 @@ if (!function_exists('getZramDashboardCard')) {
                                 </div>
                             </span>
                             <span class='tile-header-right'>
+                                <span class="zram-refresh-indicator" style="font-size: 0.8em; opacity: 0.6; margin-right: 12px; display: inline-flex; align-items: center; gap: 4px; vertical-align: middle;">
+                                    <i class="fa fa-refresh" id="zram-refresh-icon" style="font-size: 0.9em;"></i>
+                                    <span id="zram-refresh-text" style="font-family: monospace;"><?php echo round(($zram_settings['refresh_interval'] ?? 3000)/1000, 1); ?>s</span>
+                                </span>
                                 <span class='tile-ctrl'>
                                     <a href="/Settings/UnraidZramCard" title="Settings"><i class="fa fa-cog"></i></a>
                                 </span>
