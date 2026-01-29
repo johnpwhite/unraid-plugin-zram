@@ -68,3 +68,13 @@ Use the `<FILE Run="/bin/bash" Method="remove">` pattern.
 | Settings don't apply | Algorithm set before Size | Combine `size` and `algo` into one `zramctl` call. |
 | Boot script fails | Hardcoded binary paths | Use `which` to find binaries dynamically. |
 | Uninstall hangs | No output or Nginx reload | Remove reload commands and ensure script echos progress. |
+
+---
+
+## 6. Versioning Strategy
+**Format**: `YYYY.MM.DD.XX` (e.g., `2026.01.27.01`)
+*   **Date Check**: ALWAYS compare the current system date with the last version in the `.plg` file.
+*   **Rollover Rule**:
+    *   **New Day**: If `CurrentDate > LastVersionDate`, reset the counter: `CurrentDate.01`.
+    *   **Same Day**: If `CurrentDate == LastVersionDate`, increment the counter: `.XX` -> `.XX+1`.
+*   **Never** increment the counter on a past date. Always roll forward to today.

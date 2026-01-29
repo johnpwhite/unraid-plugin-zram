@@ -166,7 +166,7 @@ if (!function_exists('getZramDashboardCard')) {
                             };
                         </script>
                         <script src="/plugins/unraid-zram-card/js/chart.min.js"></script>
-                        <script src="/plugins/unraid-zram-card/js/zram-card.js"></script>
+                        <script src="/plugins/unraid-zram-card/js/zram-card.js?v=<?php echo time(); ?>"></script>
                     </td>
                 </tr>
             </tbody>
