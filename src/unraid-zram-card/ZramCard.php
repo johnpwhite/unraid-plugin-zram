@@ -154,15 +154,32 @@ if (!function_exists('getZramDashboardCard')) {
 
                             <!-- Device List (Compact) -->
                             <div id="zram-device-list" style="margin-top: 3px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 2px;">
-                                <?php if (count($devices) > 0): ?>
-                                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4px; opacity: 0.5; font-size: 0.75em; margin-bottom: 1px; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                        <div style="text-align: left;">Dev</div><div style="text-align: right;">Size</div><div style="text-align: right;">Used</div><div style="text-align: right;">Comp</div>
+                                <?php if (count($devices) > 0): 
+                                    // Initial fetch of priorities and swappiness for static render
+                                    $prioMap = [];
+                                    exec('swapon --noheadings --show --output NAME,PRIO 2>/dev/null', $swap_out);
+                                    foreach ($swap_out as $line) {
+                                        $parts = preg_split('/\s+/', trim($line));
+                                        if (count($parts) >= 2) $prioMap[$parts[0]] = $parts[1];
+                                    }
+                                    $swappiness = trim(@file_get_contents('/proc/sys/vm/swappiness') ?: '60');
+                                ?>
+                                    <div style="display: grid; grid-template-columns: 1.2fr 1fr 0.8fr 0.8fr 1fr; gap: 4px; opacity: 0.5; font-size: 0.75em; margin-bottom: 1px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                        <div style="text-align: left;">Dev</div>
+                                        <div style="text-align: right;">Size</div>
+                                        <div style="text-align: right;">Prio</div>
+                                        <div style="text-align: right;">Swap</div>
+                                        <div style="text-align: right;">Comp</div>
                                     </div>
-                                    <?php foreach ($devices as $dev): ?>
-                                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4px; font-size: 0.8em; padding: 1px 0;">
-                                        <div style="text-align: left; font-weight: bold;"><?php echo htmlspecialchars($dev['name'] ?? '?'); ?></div>
-                                        <div style="text-align: right; opacity: 0.7;"><?php echo $formatBytes(intval($dev['disksize'] ?? 0)); ?></div>
-                                        <div style="text-align: right; opacity: 0.7;"><?php echo $formatBytes(intval($dev['total'] ?? 0)); ?></div>
+                                    <?php foreach ($devices as $dev): 
+                                        $devPath = (strpos($dev['name'], '/dev/') === 0) ? $dev['name'] : "/dev/{$dev['name']}";
+                                        $prio = $prioMap[$devPath] ?? '100';
+                                    ?>
+                                    <div style="display: grid; grid-template-columns: 1.2fr 1fr 0.8fr 0.8fr 1fr; gap: 4px; font-size: 0.8em; padding: 1px 0;">
+                                        <div style="text-align: left; font-weight: bold;"><?php echo htmlspecialchars(basename($dev['name'] ?? '?')); ?></div>
+                                        <div style="text-align: right; opacity: 0.7;"><?php echo $formatBytes(intval($dev['disksize'] ?? 0), 0); ?></div>
+                                        <div style="text-align: right; opacity: 0.7;"><?php echo $prio; ?></div>
+                                        <div style="text-align: right; opacity: 0.7;"><?php echo $swappiness; ?></div>
                                         <div style="text-align: right; opacity: 0.7;"><?php echo htmlspecialchars($dev['algorithm'] ?? '?'); ?></div>
                                     </div>
                                     <?php endforeach; ?>

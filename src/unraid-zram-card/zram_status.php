@@ -54,18 +54,37 @@ if ($return_var === 0 && !empty($output)) {
     $data['devices'] = $devices;
 }
 
-// Enrich with CPU Ticks from /sys/block/zramX/stat
+// Get Priority Map from swapon
+$prioMap = [];
+exec('swapon --noheadings --show --output NAME,PRIO 2>/dev/null', $swap_out);
+foreach ($swap_out as $line) {
+    $parts = preg_split('/\s+/', trim($line));
+    if (count($parts) >= 2) {
+        $prioMap[$parts[0]] = $parts[1];
+    }
+}
+
+// Get Global Swappiness
+$globalSwappiness = trim(@file_get_contents('/proc/sys/vm/swappiness') ?: '60');
+
+// Enrich with CPU Ticks and Priority
 foreach ($data['devices'] as &$device) {
     $devName = $device['name'];
-    // zramctl output might be full path "/dev/zram0" or just "zram0"
-    $devName = basename($devName); 
+    $basename = basename($devName); 
+    $fullPath = (strpos($devName, '/dev/') === 0) ? $devName : "/dev/$devName";
     
-    $statFile = "/sys/block/$devName/stat";
+    $device['prio'] = $prioMap[$fullPath] ?? '100';
+    
+    $statFile = "/sys/block/$basename/stat";
     $device['total_ticks'] = 0;
     
     if (file_exists($statFile)) {
         $content = @file_get_contents($statFile);
         if ($content) {
+            // Debug Log
+            // $debugLine = date('H:i:s') . " Dev: $devName | Raw: $content";
+            // file_put_contents('/tmp/unraid-zram-card/stat_debug.log', $debugLine, FILE_APPEND);
+            
             // Content format: read_ios read_merges read_sectors read_ticks write_ios ...
             // We want indices 3 (read ticks) and 7 (write ticks) - 0-indexed split
             $stats = preg_split('/\s+/', trim($content));
@@ -116,7 +135,8 @@ $response = [
         'total_used' => $totalUsed,
         'disk_size_total' => $diskSizeTotal,
         'memory_saved' => $memorySaved,
-        'compression_ratio' => $ratio
+        'compression_ratio' => $ratio,
+        'swappiness' => $globalSwappiness
     ]
 ];
 
