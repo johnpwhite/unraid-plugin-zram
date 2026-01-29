@@ -1,9 +1,11 @@
 <CHANGES>
+## 2026.01.30.05
+- UX: Improved Dashboard card with detailed stat grid (Swappiness, Load, Savings).
+- UX: Enhanced Swappiness visibility and clarified global system settings.
+- UX: Improved Swap management with OOM-aware safety guards and dynamic warnings.
+- UX: Better column labeling and priority tooltips for easier management.
+- Fix: Robust parsing of system swap priorities for reliable display.
+
 ## 2026.01.25.66
 - Official Initial Release.
-- Modern, high-contrast Dashboard card with real-time RAM Saved chart.
-- Dynamic ZRAM swap management UI (Create/Remove) with boot persistence.
-- Support for all kernel-supported compression algorithms (zstd, lz4, etc.).
-- Built-in Safe Evacuation guards to prevent system crashes during ZRAM removal.
-- Robust Hybrid Installer supporting both Online and Air-Gapped/Manual deployments.
 </CHANGES>
