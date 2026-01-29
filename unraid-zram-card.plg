@@ -1,7 +1,19 @@
 <?xml version='1.0' standalone='yes'?>
-<PLUGIN name="unraid-zram-card" author="John White" version="2026.01.29.13" launch="Settings/UnraidZramCard" pluginURL="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/unraid-zram-card.plg" min="6.12.1" support="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/src/unraid-zram-card/HELP.md" icon="unraid-zram-card.png">
+<!DOCTYPE PLUGIN [
+<!ENTITY name      "unraid-zram-card">
+<!ENTITY author    "John White">
+<!ENTITY version   "2026.01.29.14">
+<!ENTITY launch    "Settings/UnraidZramCard">
+<!ENTITY gitURL    "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master">
+<!ENTITY pluginURL "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/unraid-zram-card.plg">
+<!ENTITY boot      "/boot/config/plugins/unraid-zram-card">
+<!ENTITY emhttp    "/usr/local/emhttp/plugins/unraid-zram-card">
+]>
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.1" support="&gitURL;/src/unraid-zram-card/HELP.md" icon="unraid-zram-card.png">
 
 <CHANGES>
+## 2026.01.29.14
+- Fix: Reverted to Entity-based XML structure pointing to GitLab (Development Master).
 ## 2026.01.29.13
 - Fix: Reverted pluginURL to GitLab (Development Default) and maintained Simple XML structure.
 ## 2026.01.29.12
@@ -60,7 +72,7 @@
 - Feature: Updated plugin icon with new PNG artwork.
 </CHANGES>
 
-<ICON>https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/src/unraid-zram-card/unraid-zram-card.png</ICON>
+<ICON>&gitURL;/src/unraid-zram-card/unraid-zram-card.png</ICON>
 
 <!-- 1. HYBRID INSTALLER SCRIPT -->
 <FILE Run="/bin/bash" Name="/tmp/unraid-zram-card-installer">
