@@ -2,16 +2,19 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "unraid-zram-card">
 <!ENTITY author    "John White">
-<!ENTITY version   "2026.01.29.15">
+<!ENTITY version   "2026.01.30.01">
 <!ENTITY launch    "Settings/UnraidZramCard">
 <!ENTITY gitURL    "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master">
 <!ENTITY pluginURL "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/unraid-zram-card.plg">
 <!ENTITY boot      "/boot/config/plugins/unraid-zram-card">
 <!ENTITY emhttp    "/usr/local/emhttp/plugins/unraid-zram-card">
 ]>
-<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.1" support="&gitURL;/src/unraid-zram-card/HELP.md" icon="unraid-zram-card.png">
+<PLUGIN name="unraid-zram-card" author="John White" version="2026.01.30.01" launch="Settings/UnraidZramCard" pluginURL="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/unraid-zram-card.plg" min="6.12.1" support="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/src/unraid-zram-card/HELP.md" icon="unraid-zram-card.png">
 
 <CHANGES>
+## 2026.01.30.01
+- Fix: Resolved XML parsing error by hardcoding PLUGIN tag attributes.
+- Fix: Corrected malformed entity escaping in removal script.
 ## 2026.01.29.15
 - Fix: Restore known working XML structure from version .07 (GitLab URLs, Entity-based).
 ## 2026.01.29.14
@@ -156,7 +159,7 @@ if [ -f "$PLUGIN_DIR/zram_swap.php" ]; then
 fi
 rm -rf "$PLUGIN_DIR"
 rm -rf "$CONFIG_DIR"
-removepkg "$NAME" &gt; /dev/null 2&gt;&amp;1
+removepkg "$NAME" &amp;gt; /dev/null 2&amp;gt;&amp;amp;1
 if [ -f /usr/local/sbin/update_plugin_cache ]; then
     /usr/local/sbin/update_plugin_cache
 fi

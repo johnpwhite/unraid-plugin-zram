@@ -6,5 +6,4 @@
 - Support for all kernel-supported compression algorithms (zstd, lz4, etc.).
 - Built-in Safe Evacuation guards to prevent system crashes during ZRAM removal.
 - Robust Hybrid Installer supporting both Online and Air-Gapped/Manual deployments.
-- High-contrast UI optimized for Unraid 7.2+.
 </CHANGES>

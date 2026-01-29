@@ -78,3 +78,16 @@ Use the `<FILE Run="/bin/bash" Method="remove">` pattern.
     *   **New Day**: If `CurrentDate > LastVersionDate`, reset the counter: `CurrentDate.01`.
     *   **Same Day**: If `CurrentDate == LastVersionDate`, increment the counter: `.XX` -> `.XX+1`.
 *   **Never** increment the counter on a past date. Always roll forward to today.
+
+---
+
+## 7. Environment & Git Workflow
+**PowerShell Constraints**:
+*   **No Chaining**: The user's environment does NOT support command chaining with `&&` or `;`.
+*   **Sequential Execution**: You MUST execute git commands (`add`, `commit`, `push`) as **separate, sequential tool calls** to `run_shell_command`.
+*   **Example**:
+    1.  Call `run_shell_command("git add .")`
+    2.  Wait for success.
+    3.  Call `run_shell_command("git commit -m '...'")`
+    4.  Wait for success.
+    5.  Call `run_shell_command("git push")`
