@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "unraid-zram-card">
 <!ENTITY author    "John White">
-<!ENTITY version   "2026.01.29.05">
+<!ENTITY version   "2026.01.29.06">
 <!ENTITY launch    "Settings/UnraidZramCard">
 <!ENTITY gitURL    "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master">
 <!ENTITY pluginURL "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/unraid-zram-card.plg">
@@ -12,6 +12,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.1" support="&gitURL;/src/unraid-zram-card/HELP.md" icon="unraid-zram-card.png">
 
 <CHANGES>
+## 2026.01.29.06
+- UX: Refactored 'Edit Device' modal: Removed misleading Global Swappiness input and grouped immutable settings under 'Danger Zone'.
+- UX: Added 'Swappiness' column to device list (Read-Only/Global) for clarity.
+- Fix: Fixed broken 'Cancel' button in Edit Modal.
 ## 2026.01.29.05
 - UX: Added visual Refresh Indicator (Time & Pulse Icon) to the dashboard card.
 ## 2026.01.29.04
