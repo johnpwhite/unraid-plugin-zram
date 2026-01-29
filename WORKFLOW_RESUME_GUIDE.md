@@ -15,6 +15,7 @@ Use this file to resume development in a clean Gemini CLI session.
 Always ask the agent to read `AGENT_SKILL_UNRAID_PLUGIN.md` at the start of a session. It contains the "Golden Path" findings:
 
 - Hybrid XML Strategy (Hardcoded header, flexible payload).
+- **Ampersand Safety**: Always use `&amp;` instead of `&` in changelog and scripts.
 - Dashboard Safety (No nested `<tbody>` tags).
 - Boot Persistence (`zram_init.sh` via `.plg` install phase).
 - Dynamic Binary Path detection.
@@ -25,6 +26,7 @@ Always ask the agent to read `AGENT_SKILL_UNRAID_PLUGIN.md` at the start of a se
 
 1. **Modify Source**: Edit files in `src/unraid-zram-card/`.
 2. **Sync PLG**: Update the version number and changelog in `unraid-zram-card.plg`.
+   - ⚠️ **Remember**: Use `&amp;` for any `&` characters (e.g., `Time &amp; Pulse`).
 3. **GitLab Push**:
    - `git add .`
    - `git commit -m "feat/fix: description (v.XX)"`

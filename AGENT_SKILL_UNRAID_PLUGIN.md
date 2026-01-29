@@ -11,7 +11,7 @@ You are an expert Unraid Plugin Developer. You specialize in creating robust, vi
 Unraid's pre-installer parser is strict and can fail with "XML parse error" if the root tag is complex.
 *   **Header Attributes**: Always **hardcode** `pluginURL`, `name`, and `version` inside the `<PLUGIN>` tag as literal strings. Do not use recursive entities here.
 *   **Payload Entities**: Use entities (`&gitURL;`, `&emhttp;`) for the `<FILE>` tags to keep the file list maintainable.
-*   **Ampersands**: NEVER use a raw `&` in `<CHANGES>` or script blocks. Use `&amp;`.
+*   **Ampersands (CRITICAL)**: NEVER use a raw `&` **anywhere** in the `.plg` file—including `<CHANGES>`, script blocks, and comments. Always use `&amp;`. Example: `Time & Pulse` must be written as `Time &amp; Pulse`.
 
 ### Air-Gap & Manual Deployment Support
 Unraid 7 has **removed the `installplg` command**. Manual installation is now done by browsing to the `.plg` file via the WebUI. To support air-gapped servers:
@@ -63,7 +63,8 @@ Use the `<FILE Run="/bin/bash" Method="remove">` pattern.
 
 | Symptom | Probable Cause | Fix |
 | :--- | :--- | :--- |
-| XML Parse Error | Raw `&` or recursive entities | Use `&amp;` and hardcode header attributes. |
+| XML Parse Error | Raw `&` anywhere (changelog, scripts) | Search for `&` and replace with `&amp;`. |
+| XML Parse Error | Recursive entities in PLUGIN tag | Hardcode header attributes. |
 | Dashboard Crashes | Nested `<tbody>` | Replace nested tables with `div` grids. |
 | Settings don't apply | Algorithm set before Size | Combine `size` and `algo` into one `zramctl` call. |
 | Boot script fails | Hardcoded binary paths | Use `which` to find binaries dynamically. |

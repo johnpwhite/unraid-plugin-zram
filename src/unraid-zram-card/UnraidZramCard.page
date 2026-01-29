@@ -232,7 +232,7 @@ if (file_exists('/sys/block/zram0/comp_algorithm')) {
                 </div>
 
                 <table class="dev-table">
-                    <thead><tr><th>Device</th><th>Size</th><th>Priority</th><th>Swappiness (Global)</th><th>Algo</th><th style="text-align: right;">Action</th></tr></thead>
+                    <thead><tr><th>Device</th><th>Size</th><th>Priority</th><th>Algorithm</th><th style="text-align: right;">Action</th></tr></thead>
                     <tbody>
                         <?php if (count($devices) > 0): ?>
                             <?php foreach ($devices as $dev): ?>
@@ -240,7 +240,6 @@ if (file_exists('/sys/block/zram0/comp_algorithm')) {
                                 <td><strong>/dev/<?php echo $dev['name']; ?></strong></td>
                                 <td><?php echo $dev['size']; ?></td>
                                 <td><?php echo $dev['prio']; ?></td>
-                                <td><span style="opacity:0.5;"><?php echo htmlspecialchars($settings['swappiness']); ?></span></td>
                                 <td><span class="algo-pill"><?php echo $dev['algo']; ?></span></td>
                                 <td style="text-align: right;">
                                     <button type="button" class="zram-btn btn-small" style="margin-right:5px;" onclick="editDevice('<?php echo $dev['name']; ?>', '<?php echo $dev['size']; ?>', '<?php echo $dev['algo']; ?>', '<?php echo $dev['prio']; ?>')" title="Edit Settings"><i class="fa fa-pencil"></i></button>
@@ -249,7 +248,7 @@ if (file_exists('/sys/block/zram0/comp_algorithm')) {
                             </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
-                            <tr><td colspan="6" style="text-align: center; opacity: 0.4; font-style: italic; padding: 20px;">No active ZRAM devices</td></tr>
+                            <tr><td colspan="5" style="text-align: center; opacity: 0.4; font-style: italic; padding: 20px;">No active ZRAM devices</td></tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
@@ -310,18 +309,29 @@ if (file_exists('/sys/block/zram0/comp_algorithm')) {
         <h3 id="modalTitle">Edit Device: <span id="modalDevName" style="color: #fff;"></span></h3>
         <input type="hidden" id="edit_dev_name">
         
-        <div class="zram-modal-field">
-            <label>Device Priority (Higher = Used First):</label>
-            <input type="number" id="edit_prio" min="-1" max="32767">
-            <div class="note">Requires Swap Re-activation (Data will be moved temporarily).</div>
+        <!-- OOM Warning Banner (shown dynamically) -->
+        <div id="oom-warning" style="display:none; background: rgba(204,0,0,0.15); border: 1px solid #cc0000; border-radius: 4px; padding: 10px; margin-bottom: 15px;">
+            <strong style="color: #ff6666;">⚠️ Low Memory Warning</strong>
+            <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #ccc;">Changing any setting requires temporarily disabling swap, which may cause system instability or OOM if insufficient RAM is available.</p>
         </div>
+        
+        <div id="edit-fields-container">
+            <div class="zram-modal-field">
+                <label>Device Priority:</label>
+                <input type="number" id="edit_prio" min="-1" max="32767">
+                <div class="note">
+                    Valid range: <strong>-1</strong> (Linux auto-assign) or <strong>0–32767</strong> (higher = used first).<br>
+                    Requires swap re-activation (data moved temporarily).
+                </div>
+            </div>
 
-        <div style="border: 1px solid #cc0000; padding: 10px; border-radius: 4px; margin-top: 15px; background: rgba(204, 0, 0, 0.05);">
-            <h4 style="margin:0 0 10px 0; color:#cc0000; font-size: 0.9em; text-transform: uppercase;">Danger Zone (Immutable)</h4>
-            <div class="zram-modal-field" style="margin-bottom: 0;">
-                <label>Size & Algo:</label>
-                <input type="text" id="edit_info" disabled style="opacity: 0.5; border-color: #555;">
-                <div class="note" style="color: #cc0000; opacity: 0.8;">To change these, you must Remove and Recreate.</div>
+            <div style="border: 1px solid #555; padding: 10px; border-radius: 4px; margin-top: 15px; background: rgba(100,100,100,0.1);">
+                <h4 style="margin:0 0 10px 0; color:#888; font-size: 0.9em; text-transform: uppercase;">Immutable Settings</h4>
+                <div class="zram-modal-field" style="margin-bottom: 0;">
+                    <label>Size &amp; Algorithm:</label>
+                    <input type="text" id="edit_info" disabled style="opacity: 0.5; border-color: #555;">
+                    <div class="note" style="opacity: 0.7;">To change size or algorithm, remove and recreate the device.</div>
+                </div>
             </div>
         </div>
 
@@ -331,6 +341,7 @@ if (file_exists('/sys/block/zram0/comp_algorithm')) {
         </div>
     </div>
 </div>
+
 
 <script>
 function renderLog(entry) {
@@ -420,8 +431,8 @@ function editDevice(name, size, algo, prio) {
     document.getElementById('edit_dev_name').value = name;
     document.getElementById('modalDevName').innerText = name;
     
-    // Handle '?' or empty prio
-    if (prio === '?' || prio === '' || prio === undefined) prio = 100;
+    // Handle '?' or empty prio - default to -1 (Linux auto-assign) for display
+    if (prio === '?' || prio === '' || prio === undefined) prio = -1;
     document.getElementById('edit_prio').value = prio;
     
     document.getElementById('edit_info').value = `${size} / ${algo}`;
@@ -429,6 +440,18 @@ function editDevice(name, size, algo, prio) {
     // Reset button state
     const btn = document.getElementById('btn-save-device');
     if (btn) btn.disabled = false;
+    
+    // Check OOM safety and show warning if needed
+    const oomWarning = document.getElementById('oom-warning');
+    oomWarning.style.display = 'none'; // Hide initially
+    
+    $.post('/plugins/unraid-zram-card/zram_swap.php', {
+        action: 'check_safety', device: name
+    }, function(data) {
+        if (!data.safe) {
+            oomWarning.style.display = 'block';
+        }
+    });
     
     document.getElementById('editModal').style.display = 'flex';
 }

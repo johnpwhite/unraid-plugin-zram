@@ -24,7 +24,7 @@ if (!function_exists('getZramDashboardCard')) {
             };
 
             // --- 1. Load Settings ---
-            $zram_settings = ['enabled' => 'yes', 'refresh_interval' => '3000'];
+            $zram_settings = ['enabled' => 'yes', 'refresh_interval' => '1000'];
             $zram_iniFile = '/boot/config/plugins/unraid-zram-card/settings.ini';
             if (file_exists($zram_iniFile)) {
                 $zram_loaded = @parse_ini_file($zram_iniFile);
@@ -145,6 +145,12 @@ if (!function_exists('getZramDashboardCard')) {
                                     </span>
                                     <span style="font-size: 0.75em; opacity: 0.7;">Load</span>
                                 </div>
+                                <div style="background-color: rgba(0,0,0,0.1); padding: 6px; border-radius: 4px; text-align: center;">
+                                    <span id="zram-swappiness" style="font-size: 1.1em; font-weight: bold; display: block; color: #ba7fba;">
+                                        <?php echo trim(@file_get_contents('/proc/sys/vm/swappiness') ?: '60'); ?>
+                                    </span>
+                                    <span style="font-size: 0.75em; opacity: 0.7;">Swappiness</span>
+                                </div>
                             </div>
 
                             <!-- Chart Canvas (Smaller Height) -->
@@ -164,22 +170,20 @@ if (!function_exists('getZramDashboardCard')) {
                                     }
                                     $swappiness = trim(@file_get_contents('/proc/sys/vm/swappiness') ?: '60');
                                 ?>
-                                    <div style="display: grid; grid-template-columns: 1.2fr 1fr 0.8fr 0.8fr 1fr; gap: 4px; opacity: 0.5; font-size: 0.75em; margin-bottom: 1px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                    <div style="display: grid; grid-template-columns: 1.5fr 1fr 0.8fr 1fr; gap: 4px; opacity: 0.5; font-size: 0.75em; margin-bottom: 1px; border-bottom: 1px solid rgba(255,255,255,0.05);">
                                         <div style="text-align: left;">Dev</div>
                                         <div style="text-align: right;">Size</div>
                                         <div style="text-align: right;">Prio</div>
-                                        <div style="text-align: right;">Swap</div>
-                                        <div style="text-align: right;">Comp</div>
+                                        <div style="text-align: right;">Algo</div>
                                     </div>
                                     <?php foreach ($devices as $dev): 
                                         $devPath = (strpos($dev['name'], '/dev/') === 0) ? $dev['name'] : "/dev/{$dev['name']}";
-                                        $prio = $prioMap[$devPath] ?? '100';
+                                        $prio = $prioMap[$devPath] ?? '-';
                                     ?>
-                                    <div style="display: grid; grid-template-columns: 1.2fr 1fr 0.8fr 0.8fr 1fr; gap: 4px; font-size: 0.8em; padding: 1px 0;">
+                                    <div style="display: grid; grid-template-columns: 1.5fr 1fr 0.8fr 1fr; gap: 4px; font-size: 0.8em; padding: 1px 0;">
                                         <div style="text-align: left; font-weight: bold;"><?php echo htmlspecialchars(basename($dev['name'] ?? '?')); ?></div>
                                         <div style="text-align: right; opacity: 0.7;"><?php echo $formatBytes(intval($dev['disksize'] ?? 0), 0); ?></div>
                                         <div style="text-align: right; opacity: 0.7;"><?php echo $prio; ?></div>
-                                        <div style="text-align: right; opacity: 0.7;"><?php echo $swappiness; ?></div>
                                         <div style="text-align: right; opacity: 0.7;"><?php echo htmlspecialchars($dev['algorithm'] ?? '?'); ?></div>
                                     </div>
                                     <?php endforeach; ?>

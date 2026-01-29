@@ -70,6 +70,15 @@ function is_evacuation_safe($target_device, &$logs) {
     return ['safe' => true];
 }
 
+// New API: Check if it's safe to modify a device (for UI warnings)
+if ($action === 'check_safety') {
+    $dev = $_POST['device'] ?? '';
+    $devPath = (strpos($dev, '/dev/') === 0) ? $dev : "/dev/$dev";
+    $safety = is_evacuation_safe($devPath, $logs);
+    echo json_encode(['safe' => $safety['safe'], 'message' => $safety['error'] ?? '', 'logs' => $logs]);
+    exit;
+}
+
 if ($action === 'update_swappiness') {
     $val = intval($_POST['val'] ?? 100);
     $val = max(0, min(100, $val)); // Clamp 0-100
