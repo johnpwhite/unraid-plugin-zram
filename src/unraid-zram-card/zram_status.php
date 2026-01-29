@@ -55,12 +55,17 @@ if ($return_var === 0 && !empty($output)) {
 }
 
 // Get Priority Map from swapon
+// Note: swapon --show=NAME,PRIO outputs name and numeric priority
 $prioMap = [];
-exec('swapon --noheadings --show --output NAME,PRIO 2>/dev/null', $swap_out);
+exec('swapon --noheadings --show=NAME,PRIO 2>/dev/null', $swap_out);
 foreach ($swap_out as $line) {
     $parts = preg_split('/\s+/', trim($line));
-    if (count($parts) >= 2) {
-        $prioMap[$parts[0]] = $parts[1];
+    // Validate: NAME should start with /dev, PRIO should be numeric
+    if (count($parts) >= 2 && strpos($parts[0], '/dev') === 0) {
+        $prio = $parts[count($parts) - 1]; // Priority is last column
+        if (is_numeric($prio) || $prio === '-1') {
+            $prioMap[$parts[0]] = $prio;
+        }
     }
 }
 

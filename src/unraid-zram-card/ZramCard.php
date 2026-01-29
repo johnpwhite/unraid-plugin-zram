@@ -161,14 +161,18 @@ if (!function_exists('getZramDashboardCard')) {
                             <!-- Device List (Compact) -->
                             <div id="zram-device-list" style="margin-top: 3px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 2px;">
                                 <?php if (count($devices) > 0): 
-                                    // Initial fetch of priorities and swappiness for static render
+                                    // Initial fetch of priorities for static render
                                     $prioMap = [];
-                                    exec('swapon --noheadings --show --output NAME,PRIO 2>/dev/null', $swap_out);
+                                    exec('swapon --noheadings --show=NAME,PRIO 2>/dev/null', $swap_out);
                                     foreach ($swap_out as $line) {
                                         $parts = preg_split('/\s+/', trim($line));
-                                        if (count($parts) >= 2) $prioMap[$parts[0]] = $parts[1];
+                                        if (count($parts) >= 2 && strpos($parts[0], '/dev') === 0) {
+                                            $prio = $parts[count($parts) - 1];
+                                            if (is_numeric($prio) || $prio === '-1') {
+                                                $prioMap[$parts[0]] = $prio;
+                                            }
+                                        }
                                     }
-                                    $swappiness = trim(@file_get_contents('/proc/sys/vm/swappiness') ?: '60');
                                 ?>
                                     <div style="display: grid; grid-template-columns: 1.5fr 1fr 0.8fr 1fr; gap: 4px; opacity: 0.5; font-size: 0.75em; margin-bottom: 1px; border-bottom: 1px solid rgba(255,255,255,0.05);">
                                         <div style="text-align: left;">Dev</div>

@@ -46,12 +46,17 @@ if (file_exists($configFile)) {
 }
 
 // Get Priority Map from swapon
+// Note: swapon --output NAME,PRIO outputs name and numeric priority
 $prioMap = [];
-exec('swapon --noheadings --show --output NAME,PRIO', $swap_out);
+exec('swapon --noheadings --show=NAME,PRIO 2>/dev/null', $swap_out);
 foreach ($swap_out as $line) {
     $parts = preg_split('/\s+/', trim($line));
-    if (count($parts) >= 2) {
-        $prioMap[$parts[0]] = $parts[1];
+    // Validate: NAME should start with /dev, PRIO should be numeric or -1
+    if (count($parts) >= 2 && strpos($parts[0], '/dev') === 0) {
+        $prio = $parts[count($parts) - 1]; // Priority is last column
+        if (is_numeric($prio) || $prio === '-1') {
+            $prioMap[$parts[0]] = $prio;
+        }
     }
 }
 
@@ -215,7 +220,7 @@ if (file_exists('/sys/block/zram0/comp_algorithm')) {
                         <span>Size:</span>
                         <input type="text" id="swap_size_val" value="<?php echo htmlspecialchars($settings['swap_size']); ?>" style="width: 60px; text-align: center;">
                     </div>
-                    <div style="display:flex; align-items:center; gap:8px; font-size:0.9em; color:#aaa;">
+                    <div style="display:flex; align-items:center; gap:8px; font-size:0.9em; color:#aaa; margin-right: auto;">
                         <span>Algo:</span>
                         <select id="swap_algo_val" style="width: 80px;">
                             <?php foreach ($algos as $a): ?>
@@ -223,16 +228,12 @@ if (file_exists('/sys/block/zram0/comp_algorithm')) {
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div style="display:flex; align-items:center; gap:8px; font-size:0.9em; color:#aaa; margin-right: auto;">
-                        <span title="Global System Swappiness (0-100)">Swappiness:</span>
-                        <input type="number" id="live_swappiness" value="<?php echo htmlspecialchars($settings['swappiness']); ?>" min="0" max="100" onchange="updateSwappiness()" style="width: 50px; text-align: center;">
-                    </div>
                     
                     <button type="button" class="zram-btn" onclick="manageZram('create')">CREATE DEVICE</button>
                 </div>
 
                 <table class="dev-table">
-                    <thead><tr><th>Device</th><th>Size</th><th>Priority</th><th>Algorithm</th><th style="text-align: right;">Action</th></tr></thead>
+                    <thead><tr><th>Device</th><th>Size</th><th title="Swap priority: -1 (auto) or 0-32767 (higher = used first)">Priority <i class="fa fa-question-circle" style="opacity:0.5;font-size:0.8em;"></i></th><th>Algorithm</th><th style="text-align: right;">Action</th></tr></thead>
                     <tbody>
                         <?php if (count($devices) > 0): ?>
                             <?php foreach ($devices as $dev): ?>
@@ -407,24 +408,6 @@ function manageZram(action, device) {
 
 function closeModal() {
     document.getElementById('editModal').style.display = 'none';
-}
-
-function updateSwappiness() {
-    const el = document.getElementById('live_swappiness');
-    let val = parseInt(el.value);
-    // Validate
-    if (isNaN(val) || val < 0) val = 0;
-    if (val > 100) val = 100;
-    el.value = val;
-    
-    addLog(`Setting Global Swappiness to ${val}...`, 'cmd');
-    
-    $.post('/plugins/unraid-zram-card/zram_swap.php', {
-        action: 'update_swappiness', val: val
-    }, function(data) {
-        if (data.success) addLog(data.message);
-        else addLog('Error setting swappiness', 'err');
-    });
 }
 
 function editDevice(name, size, algo, prio) {
