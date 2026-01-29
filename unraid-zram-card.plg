@@ -1,7 +1,9 @@
 <?xml version='1.0' standalone='yes'?>
-<PLUGIN name="unraid-zram-card" author="John White" version="2026.01.29.12" launch="Settings/UnraidZramCard" pluginURL="https://github.com/johnpwhite/unraid-plugin-zram/raw/main/unraid-zram-card.plg" min="6.12.1" support="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/src/unraid-zram-card/HELP.md" icon="unraid-zram-card.png">
+<PLUGIN name="unraid-zram-card" author="John White" version="2026.01.29.13" launch="Settings/UnraidZramCard" pluginURL="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/unraid-zram-card.plg" min="6.12.1" support="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/src/unraid-zram-card/HELP.md" icon="unraid-zram-card.png">
 
 <CHANGES>
+## 2026.01.29.13
+- Fix: Reverted pluginURL to GitLab (Development Default) and maintained Simple XML structure.
 ## 2026.01.29.12
 - Fix: Converted PLG to Simple XML (removed DTD/Entities) to resolve persistent parser errors.
 ## 2026.01.29.11
