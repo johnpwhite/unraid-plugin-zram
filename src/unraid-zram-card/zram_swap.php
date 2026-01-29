@@ -88,6 +88,7 @@ if ($action === 'update_swappiness') {
 elseif ($action === 'update_priority') {
     $dev = $_POST['device'] ?? '';
     $prio = intval($_POST['prio'] ?? 100);
+    $prio = max(-1, min(32767, $prio)); // Clamp valid range
     $devPath = (strpos($dev, '/dev/') === 0) ? $dev : "/dev/$dev";
     
     // Safety Check
