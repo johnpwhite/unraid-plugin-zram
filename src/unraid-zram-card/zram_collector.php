@@ -8,6 +8,8 @@ if (!is_dir($logDir)) mkdir($logDir, 0777, true);
 
 $historyFile = "$logDir/history.json";
 $pidFile = "$logDir/collector.pid";
+$maxPoints = 300;
+$interval = 12; // seconds
 $configFile = "/boot/config/plugins/unraid-zram-card/settings.ini";
 $debugLog = "$logDir/debug.log";
 
