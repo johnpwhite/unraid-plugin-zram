@@ -187,7 +187,7 @@ if (!function_exists('getZramDashboardCard')) {
                                     <div style="display: grid; grid-template-columns: 1.5fr 1fr 0.8fr 1fr; gap: 4px; font-size: 0.8em; padding: 1px 0;">
                                         <div style="text-align: left; font-weight: bold;"><?php echo htmlspecialchars(basename($dev['name'] ?? '?')); ?></div>
                                         <div style="text-align: right; opacity: 0.7;"><?php echo $formatBytes(intval($dev['disksize'] ?? 0), 0); ?></div>
-                                        <div style="text-align: right; opacity: 0.7;"><?php echo $prio; ?></div>
+                                        <div style="text-align: right; opacity: 0.7;"><?php echo (intval($prio) < 0) ? "Auto ($prio)" : $prio; ?></div>
                                         <div style="text-align: right; opacity: 0.7;"><?php echo htmlspecialchars($dev['algorithm'] ?? '?'); ?></div>
                                     </div>
                                     <?php endforeach; ?>
