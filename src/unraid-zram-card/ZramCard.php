@@ -3,11 +3,21 @@
 
 if (!function_exists('getZramDashboardCard')) {
     function getZramDashboardCard() {
-        // Debug Logger
-        $log = function($msg) {
+        // Standardized Logger
+        $zram_log = function($msg, $level = 'DEBUG') {
             $dir = '/tmp/unraid-zram-card';
+            $ini = '/boot/config/plugins/unraid-zram-card/settings.ini';
+            $level = strtoupper($level);
+            
+            if ($level === 'DEBUG') {
+                $loaded = @parse_ini_file($ini);
+                if (($loaded['debug'] ?? 'no') !== 'yes') return;
+            }
+            
             if (!is_dir($dir)) @mkdir($dir, 0777, true);
-            @file_put_contents($dir . '/debug.log', date('[Y-m-d H:i:s] ') . $msg . "\n", FILE_APPEND);
+            $logMsg = date('[Y-m-d H:i:s] ') . "[$level] $msg\n";
+            @file_put_contents($dir . '/debug.log', $logMsg, FILE_APPEND);
+            @chmod($dir . '/debug.log', 0666);
         };
         
         try {
@@ -24,7 +34,7 @@ if (!function_exists('getZramDashboardCard')) {
             };
 
             // --- 1. Load Settings ---
-            $zram_settings = ['enabled' => 'yes', 'refresh_interval' => '3000'];
+            $zram_settings = ['enabled' => 'yes', 'refresh_interval' => '1000'];
             $zram_iniFile = '/boot/config/plugins/unraid-zram-card/settings.ini';
             if (file_exists($zram_iniFile)) {
                 $zram_loaded = @parse_ini_file($zram_iniFile);
@@ -77,6 +87,16 @@ if (!function_exists('getZramDashboardCard')) {
             // --- 4. Render Output ---
             ob_start();
 ?>
+            <style>
+            @keyframes zram-fade-blink {
+                0% { opacity: 0.3; }
+                50% { opacity: 1; color: #7fba59; text-shadow: 0 0 2px #7fba59; }
+                100% { opacity: 0.3; }
+            }
+            .zram-pulse {
+                animation: zram-fade-blink 0.6s ease-in-out;
+            }
+            </style>
             <tbody title='ZRAM Usage'>
                 <tr>
                     <td>
@@ -95,6 +115,10 @@ if (!function_exists('getZramDashboardCard')) {
                                 </div>
                             </span>
                             <span class='tile-header-right'>
+                                <span class="zram-refresh-indicator" style="font-size: 0.8em; opacity: 0.6; margin-right: 12px; display: inline-flex; align-items: center; gap: 4px; vertical-align: middle;">
+                                    <i class="fa fa-refresh" id="zram-refresh-icon" style="font-size: 0.9em;"></i>
+                                    <span id="zram-refresh-text" style="font-family: monospace;"><?php echo round(($zram_settings['refresh_interval'] ?? 3000)/1000, 1); ?>s</span>
+                                </span>
                                 <span class='tile-ctrl'>
                                     <a href="/Settings/UnraidZramCard" title="Settings"><i class="fa fa-cog"></i></a>
                                 </span>
@@ -125,6 +149,18 @@ if (!function_exists('getZramDashboardCard')) {
                                     </span>
                                     <span style="font-size: 0.75em; opacity: 0.7;">Actual Used</span>
                                 </div>
+                                <div style="background-color: rgba(0,0,0,0.1); padding: 6px; border-radius: 4px; text-align: center;">
+                                    <span id="zram-load" title="Waiting for data..." style="font-size: 1.1em; font-weight: bold; display: block; color: #e57373;">
+                                        0%
+                                    </span>
+                                    <span style="font-size: 0.75em; opacity: 0.7;">Load</span>
+                                </div>
+                                <div style="background-color: rgba(0,0,0,0.1); padding: 6px; border-radius: 4px; text-align: center;">
+                                    <span id="zram-swappiness" style="font-size: 1.1em; font-weight: bold; display: block; color: #ba7fba;">
+                                        <?php echo trim(@file_get_contents('/proc/sys/vm/swappiness') ?: '60'); ?>
+                                    </span>
+                                    <span style="font-size: 0.75em; opacity: 0.7;">Swappiness</span>
+                                </div>
                             </div>
 
                             <!-- Chart Canvas (Smaller Height) -->
@@ -134,15 +170,34 @@ if (!function_exists('getZramDashboardCard')) {
 
                             <!-- Device List (Compact) -->
                             <div id="zram-device-list" style="margin-top: 3px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 2px;">
-                                <?php if (count($devices) > 0): ?>
-                                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4px; opacity: 0.5; font-size: 0.75em; margin-bottom: 1px; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                        <div style="text-align: left;">Dev</div><div style="text-align: right;">Size</div><div style="text-align: right;">Used</div><div style="text-align: right;">Comp</div>
+                                <?php if (count($devices) > 0): 
+                                    // Initial fetch of priorities for static render
+                                    $prioMap = [];
+                                    exec('swapon --noheadings --show=NAME,PRIO 2>/dev/null', $swap_out);
+                                    foreach ($swap_out as $line) {
+                                        $parts = preg_split('/\s+/', trim($line));
+                                        if (count($parts) >= 2 && strpos($parts[0], '/dev') === 0) {
+                                            $prio = $parts[count($parts) - 1];
+                                            if (is_numeric($prio) || $prio === '-1') {
+                                                $prioMap[$parts[0]] = $prio;
+                                            }
+                                        }
+                                    }
+                                ?>
+                                    <div style="display: grid; grid-template-columns: 1.5fr 1fr 0.8fr 1fr; gap: 4px; opacity: 0.5; font-size: 0.75em; margin-bottom: 1px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                        <div style="text-align: left;">Dev</div>
+                                        <div style="text-align: right;">Size</div>
+                                        <div style="text-align: right;">Prio</div>
+                                        <div style="text-align: right;">Algo</div>
                                     </div>
-                                    <?php foreach ($devices as $dev): ?>
-                                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4px; font-size: 0.8em; padding: 1px 0;">
-                                        <div style="text-align: left; font-weight: bold;"><?php echo htmlspecialchars($dev['name'] ?? '?'); ?></div>
-                                        <div style="text-align: right; opacity: 0.7;"><?php echo $formatBytes(intval($dev['disksize'] ?? 0)); ?></div>
-                                        <div style="text-align: right; opacity: 0.7;"><?php echo $formatBytes(intval($dev['total'] ?? 0)); ?></div>
+                                    <?php foreach ($devices as $dev): 
+                                        $devPath = (strpos($dev['name'], '/dev/') === 0) ? $dev['name'] : "/dev/{$dev['name']}";
+                                        $prio = $prioMap[$devPath] ?? '-';
+                                    ?>
+                                    <div style="display: grid; grid-template-columns: 1.5fr 1fr 0.8fr 1fr; gap: 4px; font-size: 0.8em; padding: 1px 0;">
+                                        <div style="text-align: left; font-weight: bold;"><?php echo htmlspecialchars(basename($dev['name'] ?? '?')); ?></div>
+                                        <div style="text-align: right; opacity: 0.7;"><?php echo $formatBytes(intval($dev['disksize'] ?? 0), 0); ?></div>
+                                        <div style="text-align: right; opacity: 0.7;"><?php echo (intval($prio) < 0) ? "Auto ($prio)" : $prio; ?></div>
                                         <div style="text-align: right; opacity: 0.7;"><?php echo htmlspecialchars($dev['algorithm'] ?? '?'); ?></div>
                                     </div>
                                     <?php endforeach; ?>
@@ -160,7 +215,7 @@ if (!function_exists('getZramDashboardCard')) {
                             };
                         </script>
                         <script src="/plugins/unraid-zram-card/js/chart.min.js"></script>
-                        <script src="/plugins/unraid-zram-card/js/zram-card.js"></script>
+                        <script src="/plugins/unraid-zram-card/js/zram-card.js?v=<?php echo time(); ?>"></script>
                     </td>
                 </tr>
             </tbody>
@@ -169,7 +224,7 @@ if (!function_exists('getZramDashboardCard')) {
 
         } catch (Throwable $e) {
             if (ob_get_level() > 0) ob_end_clean();
-            $log("CRITICAL ERROR: " . $e->getMessage());
+            $zram_log("CRITICAL ERROR: " . $e->getMessage(), 'ERROR');
             return "<tbody title='ZRAM Error'><tr><td><div style='padding: 10px; color: #E57373; text-align: center;'><strong>ZRAM Plugin Error</strong><br><small>Run: cat /tmp/unraid-zram-card/debug.log</small></div></td></tr></tbody>";
         }
     }

@@ -2,12 +2,12 @@
 // zram_swap.php
 // Backend logic with Safe Evacuation Check
 
-header('Content-Type: application/json');
+// header('Content-Type: application/json'); // Moved below view_log to prevent conflicts
 
-$action = $_POST['action'] ?? '';
-$size = $_POST['size'] ?? '1G';
-$algo = $_POST['algo'] ?? 'zstd';
-$device = $_POST['device'] ?? '';
+$action = $_REQUEST['action'] ?? '';
+$size = $_REQUEST['size'] ?? '1G';
+$algo = $_REQUEST['algo'] ?? 'zstd';
+$device = $_REQUEST['device'] ?? '';
 
 $configFile = "/boot/config/plugins/unraid-zram-card/settings.ini";
 $logDir = "/tmp/unraid-zram-card";
@@ -16,11 +16,28 @@ $debugLog = $logDir . "/debug.log";
 
 $logs = [];
 
+function zram_log($msg, $level = 'DEBUG') {
+    global $debugLog, $configFile;
+    $levels = ['INFO', 'DEBUG', 'WARN', 'ERROR'];
+    $level = strtoupper($level);
+    if (!in_array($level, $levels)) $level = 'DEBUG';
+
+    // Only log DEBUG if explicitly enabled
+    if ($level === 'DEBUG') {
+        $loaded = @parse_ini_file($configFile);
+        if (($loaded['debug'] ?? 'no') !== 'yes') return;
+    }
+
+    $logMsg = date('[Y-m-d H:i:s] ') . "[$level] $msg\n";
+    @file_put_contents($debugLog, $logMsg, FILE_APPEND);
+    @chmod($debugLog, 0666);
+}
+
 function run_cmd($cmd, &$logs, $debugLog) {
     exec($cmd . " 2>&1", $out, $ret);
     $entry = ['cmd' => $cmd, 'output' => implode(" ", $out), 'status' => $ret];
     $logs[] = $entry;
-    @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . "CMD: $cmd | Status: $ret | Output: " . $entry['output'] . "\n", FILE_APPEND);
+    zram_log("CMD: $cmd | Status: $ret | Output: " . $entry['output'], 'INFO');
     return $ret;
 }
 
@@ -70,7 +87,108 @@ function is_evacuation_safe($target_device, &$logs) {
     return ['safe' => true];
 }
 
-if ($action === 'create') {
+if ($action === 'view_log') {
+    if (ob_get_level()) ob_end_clean();
+    header('Content-Type: text/plain; charset=utf-8');
+    header('Cache-Control: no-cache, must-revalidate');
+    if (file_exists($debugLog)) {
+        if (is_readable($debugLog)) {
+            readfile($debugLog);
+        } else {
+            echo "Error: Debug log exists but is not readable by the web server.\n";
+            echo "Permissions: " . substr(sprintf('%o', fileperms($debugLog)), -4) . "\n";
+        }
+    } else {
+        echo "Debug log not found at $debugLog\n";
+    }
+    exit;
+}
+
+// For all other actions, we return JSON
+header('Content-Type: application/json');
+
+// New API: Check if it's safe to modify a device (for UI warnings)
+if ($action === 'check_safety') {
+    $dev = $_POST['device'] ?? '';
+    $devPath = (strpos($dev, '/dev/') === 0) ? $dev : "/dev/$dev";
+    $safety = is_evacuation_safe($devPath, $logs);
+    echo json_encode(['safe' => $safety['safe'], 'message' => $safety['error'] ?? '', 'logs' => $logs]);
+    exit;
+}
+
+if ($action === 'update_swappiness') {
+    $val = intval($_POST['val'] ?? 100);
+    $val = max(0, min(100, $val)); // Clamp 0-100
+    
+    run_cmd("sysctl vm.swappiness=$val", $logs, $debugLog);
+    
+    // Persist
+    $loaded = @parse_ini_file($configFile);
+    $loaded['swappiness'] = $val;
+    $res = []; foreach($loaded as $k => $v) $res[] = "$k=\"$v\"";
+    file_put_contents($configFile, implode("\n", $res));
+    
+    echo json_encode(['success' => true, 'message' => "Swappiness set to $val", 'logs' => $logs]);
+}
+
+elseif ($action === 'update_debug') {
+    $val = $_POST['val'] ?? 'no';
+    
+    // Persist
+    $loaded = @parse_ini_file($configFile);
+    $loaded['debug'] = $val;
+    $res = []; foreach($loaded as $k => $v) $res[] = "$k=\"$v\"";
+    file_put_contents($configFile, implode("\n", $res));
+    
+    zram_log("Debug mode set to $val", 'INFO');
+    echo json_encode(['success' => true, 'message' => "Debug logging set to $val", 'logs' => $logs]);
+}
+
+elseif ($action === 'update_priority') {
+    $dev = $_POST['device'] ?? '';
+    $prio = intval($_POST['prio'] ?? 100);
+    $prio = max(-1, min(32767, $prio)); // Clamp valid range
+    $devPath = (strpos($dev, '/dev/') === 0) ? $dev : "/dev/$dev";
+    
+    // Safety Check
+    $safety = is_evacuation_safe($devPath, $logs);
+    if (!$safety['safe']) {
+        echo json_encode(['success' => false, 'message' => $safety['error'], 'logs' => $logs]);
+        exit;
+    }
+
+    // Apply Live
+    if (run_cmd("swapoff $devPath", $logs, $debugLog) === 0) {
+        if (run_cmd("swapon $devPath -p $prio", $logs, $debugLog) === 0) {
+            
+            // Persist (Update INI)
+            $devName = str_replace('/dev/', '', $devPath); // zram0
+            $index = intval(str_replace('zram', '', $devName)); // 0
+            
+            $loaded = @parse_ini_file($configFile);
+            $devs = array_filter(explode(',', $loaded['zram_devices'] ?? ''));
+            
+            if (isset($devs[$index])) {
+                // Entry format: size:algo or size:algo:prio
+                $parts = explode(':', $devs[$index]);
+                $parts[2] = $prio; // Set/Update prio
+                $devs[$index] = implode(':', $parts);
+                
+                $loaded['zram_devices'] = implode(',', $devs);
+                $res = []; foreach($loaded as $k => $v) $res[] = "$k=\"$v\"";
+                file_put_contents($configFile, implode("\n", $res));
+            }
+            
+            echo json_encode(['success' => true, 'message' => "Priority updated to $prio", 'logs' => $logs]);
+        } else {
+            echo json_encode(['success' => false, 'message' => "Failed to reactivate swap", 'logs' => $logs]);
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => "Failed to deactivate swap (Busy?)", 'logs' => $logs]);
+    }
+}
+
+elseif ($action === 'create') {
     run_cmd('modprobe zram', $logs, $debugLog);
     $cmd = "zramctl --find --size " . escapeshellarg($size) . " --algorithm " . escapeshellarg($algo);
     exec($cmd . " 2>&1", $find_out, $ret);
@@ -128,5 +246,18 @@ elseif ($action === 'remove') {
         file_put_contents($configFile, implode("\n", $res));
         echo json_encode(['success' => true, 'message' => "Removed $device", 'logs' => $logs]);
     }
+}
+if ($action === 'clear_log') {
+    if (file_exists($debugLog)) {
+        if (@file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . "DEBUG: Log cleared by user.\n") !== false) {
+            @chmod($debugLog, 0666);
+            echo json_encode(['success' => true, 'message' => "Debug log cleared"]);
+        } else {
+            echo json_encode(['success' => false, 'message' => "Failed to write to log file. Check permissions."]);
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => "Log file not found"]);
+    }
+    exit;
 }
 ?>
