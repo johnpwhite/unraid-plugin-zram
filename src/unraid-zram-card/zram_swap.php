@@ -20,8 +20,13 @@ function run_cmd($cmd, &$logs, $debugLog) {
     exec($cmd . " 2>&1", $out, $ret);
     $entry = ['cmd' => $cmd, 'output' => implode(" ", $out), 'status' => $ret];
     $logs[] = $entry;
-    @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . "CMD: $cmd | Status: $ret | Output: " . $entry['output'] . "\n", FILE_APPEND);
+    $logMsg = date('[Y-m-d H:i:s] ') . "CMD: $cmd | Status: $ret | Output: " . $entry['output'] . "\n";
+    @file_put_contents($debugLog, $logMsg, FILE_APPEND);
     return $ret;
+}
+
+function debug_log($msg, $debugLog) {
+    @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . "DEBUG: $msg\n", FILE_APPEND);
 }
 
 // Check if it's safe to remove ZRAM (prevents OOM crashes)
@@ -70,6 +75,16 @@ function is_evacuation_safe($target_device, &$logs) {
     return ['safe' => true];
 }
 
+if ($action === 'view_log') {
+    header('Content-Type: text/plain');
+    if (file_exists($debugLog)) {
+        readfile($debugLog);
+    } else {
+        echo "Debug log not found at $debugLog\n";
+    }
+    exit;
+}
+
 // New API: Check if it's safe to modify a device (for UI warnings)
 if ($action === 'check_safety') {
     $dev = $_POST['device'] ?? '';
@@ -92,6 +107,19 @@ if ($action === 'update_swappiness') {
     file_put_contents($configFile, implode("\n", $res));
     
     echo json_encode(['success' => true, 'message' => "Swappiness set to $val", 'logs' => $logs]);
+}
+
+elseif ($action === 'update_debug') {
+    $val = $_POST['val'] ?? 'no';
+    
+    // Persist
+    $loaded = @parse_ini_file($configFile);
+    $loaded['debug'] = $val;
+    $res = []; foreach($loaded as $k => $v) $res[] = "$k=\"$v\"";
+    file_put_contents($configFile, implode("\n", $res));
+    
+    debug_log("Debug mode set to $val", $debugLog);
+    echo json_encode(['success' => true, 'message' => "Debug logging set to $val", 'logs' => $logs]);
 }
 
 elseif ($action === 'update_priority') {

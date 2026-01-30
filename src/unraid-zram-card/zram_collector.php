@@ -8,10 +8,27 @@ if (!is_dir($logDir)) mkdir($logDir, 0777, true);
 
 $historyFile = "$logDir/history.json";
 $pidFile = "$logDir/collector.pid";
-$maxPoints = 300;
-$interval = 12; // seconds
+$configFile = "/boot/config/plugins/unraid-zram-card/settings.ini";
+$debugLog = "$logDir/debug.log";
 
-// PID Management
+// Load Settings for Debug Flag
+$settings = @parse_ini_file($configFile);
+$debugEnabled = ($settings['debug'] ?? 'no') === 'yes';
+
+if ($debugEnabled) {
+    @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . "DEBUG: Collector service starting...\n", FILE_APPEND);
+}
+
+// PID Management - Check for running instance
+if (file_exists($pidFile)) {
+    $oldPid = trim(file_get_contents($pidFile));
+    if (!empty($oldPid) && posix_kill($oldPid, 0)) {
+        if ($debugEnabled) {
+            @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . "DEBUG: Collector already running with PID $oldPid. Exiting.\n", FILE_APPEND);
+        }
+        exit;
+    }
+}
 file_put_contents($pidFile, getmypid());
 
 $lastTotalTicks = null;
@@ -76,6 +93,10 @@ while (true) {
         $history[] = $entry;
         if (count($history) > $maxPoints) {
             array_shift($history);
+        }
+
+        if ($debugEnabled) {
+            @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . "DEBUG: Polling complete. Saved=" . round($memorySaved/1024/1024) . "MB, Load=" . round($loadPct, 1) . "%\n", FILE_APPEND);
         }
 
         file_put_contents($historyFile, json_encode($history));

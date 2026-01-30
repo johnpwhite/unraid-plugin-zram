@@ -2,16 +2,23 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "unraid-zram-card">
 <!ENTITY author    "John White">
-<!ENTITY version   "2026.01.30.08">
+<!ENTITY version   "2026.01.30.10">
 <!ENTITY launch    "Settings/UnraidZramCard">
 <!ENTITY gitURL    "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master">
 <!ENTITY pluginURL "https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/unraid-zram-card.plg">
 <!ENTITY boot      "/boot/config/plugins/unraid-zram-card">
 <!ENTITY emhttp    "/usr/local/emhttp/plugins/unraid-zram-card">
 ]>
-<PLUGIN name="unraid-zram-card" author="John White" version="2026.01.30.08" launch="Settings/UnraidZramCard" pluginURL="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/unraid-zram-card.plg" min="6.12.1" support="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/src/unraid-zram-card/HELP.md" icon="unraid-zram-card.png">
+<PLUGIN name="unraid-zram-card" author="John White" version="2026.01.30.10" launch="Settings/UnraidZramCard" pluginURL="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/unraid-zram-card.plg" min="6.12.1" support="https://gitlab.johnpwhite.com/johner/unraid-zram-card/-/raw/master/src/unraid-zram-card/HELP.md" icon="unraid-zram-card.png">
 
 <CHANGES>
+## 2026.01.30.10
+- feat: Added "Debug Mode" toggle to Settings UI.
+- feat: Detailed instrumentation across all scripts (logs to /tmp/unraid-zram-card/debug.log).
+- feat: Improved swappiness sync logic (automatic updates).
+- Fix: Proactively create default configuration to prevent boot errors.
+- Fix: Enhanced installer robustness and line-ending preservation.
+
 ## 2026.01.30.08
 - Fix: Corrected installation error that prevented background collector from starting.
 - Fix: Improved CPU load calculation precision in history collector.
@@ -160,6 +167,18 @@ chmod +x "$EMHTTP_DEST/zram_collector.php"
 chmod +x "$EMHTTP_DEST/zram_init.sh"
 
 echo "--- INSTALL COMPLETE ---"
+mkdir -p "/boot/config/plugins/$NAME"
+if [ ! -f "/boot/config/plugins/$NAME/settings.ini" ]; then
+    echo "Creating default configuration..."
+    echo 'enabled="yes"' > "/boot/config/plugins/$NAME/settings.ini"
+    echo 'refresh_interval="3000"' >> "/boot/config/plugins/$NAME/settings.ini"
+    echo 'swappiness="100"' >> "/boot/config/plugins/$NAME/settings.ini"
+    echo 'console_visible="no"' >> "/boot/config/plugins/$NAME/settings.ini"
+    echo 'swap_size="1G"' >> "/boot/config/plugins/$NAME/settings.ini"
+    echo 'compression_algo="zstd"' >> "/boot/config/plugins/$NAME/settings.ini"
+    echo 'zram_devices=""' >> "/boot/config/plugins/$NAME/settings.ini"
+    echo 'debug="no"' >> "/boot/config/plugins/$NAME/settings.ini"
+fi
 rm /tmp/unraid-zram-card-installer
 </INLINE>
 </FILE>
