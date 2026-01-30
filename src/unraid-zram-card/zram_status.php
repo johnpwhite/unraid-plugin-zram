@@ -131,6 +131,13 @@ $memorySaved = max(0, $totalOriginal - $totalUsed);
 // Compression Ratio
 $ratio = ($totalCompressed > 0) ? round($totalOriginal / $totalCompressed, 2) : 0;
 
+// Include Rolling History from collector
+$history = [];
+$historyFile = "/tmp/unraid-zram-card/history.json";
+if (file_exists($historyFile)) {
+    $history = json_decode(file_get_contents($historyFile), true) ?: [];
+}
+
 $response = [
     'timestamp' => time(),
     'devices' => $data['devices'],
@@ -142,7 +149,8 @@ $response = [
         'memory_saved' => $memorySaved,
         'compression_ratio' => $ratio,
         'swappiness' => $globalSwappiness
-    ]
+    ],
+    'history' => $history
 ];
 
 echo json_encode($response);

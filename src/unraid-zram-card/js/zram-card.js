@@ -1,14 +1,14 @@
 // zram-card.js
 
-(function() {
+(function () {
     let chartInstance = null;
-    const historyLimit = 30; // Keep last 30 data points
+    const historyLimit = 300; // Keep last 300 data points (1 hour at 12s interval)
     const historyData = {
         labels: [],
         saved: [],
         load: []
     };
-    
+
     // CPU Load Tracking
     let lastTotalTicks = null;
     let lastTime = null;
@@ -81,7 +81,7 @@
                         mode: 'index',
                         intersect: false,
                         callbacks: {
-                            label: function(context) {
+                            label: function (context) {
                                 if (context.dataset.yAxisID === 'y') {
                                     return 'Saved: ' + formatBytes(context.parsed.y);
                                 } else {
@@ -105,7 +105,7 @@
                             color: textColor,
                             font: { size: 10 },
                             maxTicksLimit: 6,
-                            callback: function(value) {
+                            callback: function (value) {
                                 return formatBytes(value, value >= 1048576 ? 1 : 0);
                             }
                         }
@@ -121,7 +121,7 @@
                             color: loadColor,
                             font: { size: 10 },
                             maxTicksLimit: 4,
-                            callback: function(value) {
+                            callback: function (value) {
                                 return value + '%';
                             }
                         }
@@ -133,6 +133,7 @@
     }
 
     // Fetch and Update
+    let historyLoaded = false;
     async function updateStats() {
         try {
             const config = window.ZRAM_CONFIG || { url: '/plugins/unraid-zram-card/zram_status.php', pollInterval: 3000 };
@@ -145,11 +146,11 @@
             const elSaved = document.getElementById('zram-saved');
             const elRatio = document.getElementById('zram-ratio');
             const elUsed = document.getElementById('zram-used');
-            
+
             if (elSaved) elSaved.textContent = formatBytes(aggs.memory_saved);
             if (elRatio) elRatio.textContent = aggs.compression_ratio + 'x';
             if (elUsed) elUsed.textContent = formatBytes(aggs.total_used);
-            
+
             // Calculate Load
             let currentTotalTicks = 0;
             if (data.devices) {
@@ -157,12 +158,12 @@
                     currentTotalTicks += (parseInt(d.total_ticks) || 0);
                 });
             }
-            
+
             const now = Date.now();
             let loadPct = 0;
             let deltaTicks = 0;
             let deltaTime = 0;
-            
+
             if (lastTotalTicks !== null && lastTime !== null) {
                 deltaTicks = currentTotalTicks - lastTotalTicks;
                 deltaTime = now - lastTime;
@@ -172,22 +173,22 @@
                 }
             }
             if (isNaN(loadPct)) loadPct = 0;
-            
+
             lastTotalTicks = currentTotalTicks;
             lastTime = now;
-            
+
             const elLoad = document.getElementById('zram-load');
             if (elLoad) {
                 elLoad.textContent = loadPct.toFixed(1) + '%';
                 elLoad.title = `Debug: ${deltaTicks} ticks / ${deltaTime} ms`;
             }
-            
+
             // Subtitle status
             const statusText = aggs.disk_size_total > 0 ? `Active (${data.devices.length} devs)` : 'Inactive';
             const sub = document.querySelector('.zram-subtitle');
             if (sub) sub.textContent = statusText;
 
-            // 2. Update Device List (Div-based)
+            // 2. Update Device List
             const listContainer = document.getElementById('zram-device-list');
             if (listContainer) {
                 if (!data.devices || data.devices.length === 0) {
@@ -200,7 +201,7 @@
                             <div style="text-align: right;">Prio</div>
                             <div style="text-align: right;">Algo</div>
                         </div>`;
-                    
+
                     data.devices.forEach(dev => {
                         html += `
                             <div style="display: grid; grid-template-columns: 1.5fr 1fr 0.8fr 1fr; gap: 4px; font-size: 0.8em; padding: 1px 0;">
@@ -214,11 +215,22 @@
                 }
             }
 
-            // 3. Update Chart Data (Always update history first)
-            const timeLabel = new Date().toLocaleTimeString();
-            historyData.labels.push(timeLabel);
-            historyData.saved.push(aggs.memory_saved);
-            historyData.load.push(loadPct);
+            // 3. Update Chart Data
+            // If this is first load and we have history, seed it
+            if (!historyLoaded && data.history && data.history.length > 0) {
+                data.history.forEach(item => {
+                    historyData.labels.push(item.t);
+                    historyData.saved.push(item.s);
+                    historyData.load.push(item.l);
+                });
+                historyLoaded = true;
+            } else {
+                // Regular live update
+                const timeLabel = new Date().toLocaleTimeString();
+                historyData.labels.push(timeLabel);
+                historyData.saved.push(aggs.memory_saved);
+                historyData.load.push(loadPct);
+            }
 
             if (historyData.labels.length > historyLimit) {
                 historyData.labels.shift();
@@ -251,7 +263,7 @@
     } else {
         window.addEventListener('load', updateStats);
     }
-    
+
     const config = window.ZRAM_CONFIG || { pollInterval: 3000 };
     setInterval(updateStats, config.pollInterval);
 
