@@ -39,13 +39,17 @@ try {
 
     # 5. Transformations (URL Rewriting & Changelog Cleanup)
     Write-Host "Rewriting URLs and cleaning Changelog in .plg for GitHub..."
-    $content = Get-Content $PLG_FILE -Raw
+    $content = [System.IO.File]::ReadAllText((Resolve-Path $PLG_FILE))
     $content = $content -replace [regex]::Escape($GITLAB_RAW_URL), $GITHUB_RAW_URL
     if (Test-Path "CHANGES.public.xml") {
-        $publicChanges = Get-Content "CHANGES.public.xml" -Raw
+        $publicChanges = [System.IO.File]::ReadAllText((Resolve-Path "CHANGES.public.xml"))
         $content = $content -replace '(?s)<CHANGES>.*?</CHANGES>', $publicChanges
     }
-    Set-Content $PLG_FILE $content
+    # Ensure LF line endings are preserved
+    $content = $content.Replace("`r`n", "`n")
+    # Write using BOM-less UTF8
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText((Resolve-Path $PLG_FILE), $content, $utf8NoBom)
 
     # 6. File Swapping (README)
     if (Test-Path "README.public.md") {
