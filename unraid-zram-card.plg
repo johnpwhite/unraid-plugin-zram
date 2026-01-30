@@ -2,24 +2,28 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "unraid-zram-card">
 <!ENTITY author    "John White">
-<!ENTITY version   "2026.01.25.66">
+<!ENTITY version   "2026.01.30.21">
 <!ENTITY launch    "Settings/UnraidZramCard">
 <!ENTITY gitURL    "https://github.com/johnpwhite/unraid-plugin-zram/raw/main">
 <!ENTITY pluginURL "https://github.com/johnpwhite/unraid-plugin-zram/raw/main/unraid-zram-card.plg">
 <!ENTITY boot      "/boot/config/plugins/unraid-zram-card">
 <!ENTITY emhttp    "/usr/local/emhttp/plugins/unraid-zram-card">
 ]>
-<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.1" support="&gitURL;/src/unraid-zram-card/HELP.md" icon="unraid-zram-card.png">
+<PLUGIN name="unraid-zram-card" author="John White" version="2026.01.30.21" launch="Settings/UnraidZramCard" pluginURL="https://github.com/johnpwhite/unraid-plugin-zram/raw/main/unraid-zram-card.plg" min="6.12.1" support="https://github.com/johnpwhite/unraid-plugin-zram/raw/main/src/unraid-zram-card/HELP.md" icon="unraid-zram-card.png">
 
 <CHANGES>
+## 2026.01.30.21
+- **New Feature: Persistent Dashboard History**. Maintains a 1-hour rolling chart of ZRAM performance even after closing the browser.
+- **New Feature: Unified Diagnostics Console**. Integrated tabbed console for real-time Command History and System Debug Logs.
+- **New Feature: In-Page Debug Viewer**. Live-refreshing log viewer with truncation capabilities, bypassing external window issues.
+- **Improvement: Standardized Logging**. Consistent [LEVEL] prefixes (INFO, DEBUG, WARN, ERROR) across all plugin components.
+- **Improvement: Robust Installer**. Automatic configuration healing on boot to ensure stability after fresh installs or updates.
+- **Improvement: Performance Optimizations**. Enhanced CPU Load tracking and precision for ZRAM metrics.
+- **Fix: Permission Stability**. Standardized world-readable diagnostics logs (0666) for reliable access across web/root users.
+- **Fix: UI Synchronization**. Resolved issues with swappiness and debug toggle states persisting across refreshes.
+
 ## 2026.01.25.66
 - Official Initial Release.
-- Modern, high-contrast Dashboard card with real-time RAM Saved chart.
-- Dynamic ZRAM swap management UI (Create/Remove) with boot persistence.
-- Support for all kernel-supported compression algorithms (zstd, lz4, etc.).
-- Built-in Safe Evacuation guards to prevent system crashes during ZRAM removal.
-- Robust Hybrid Installer supporting both Online and Air-Gapped/Manual deployments.
-- High-contrast UI optimized for Unraid 7.2+.
 </CHANGES>
 
 <ICON>&gitURL;/src/unraid-zram-card/unraid-zram-card.png</ICON>
@@ -41,6 +45,7 @@ FILES=(
     "ZramCard.php:src/unraid-zram-card/ZramCard.php"
     "zram_status.php:src/unraid-zram-card/zram_status.php"
     "zram_swap.php:src/unraid-zram-card/zram_swap.php"
+    "zram_collector.php:src/unraid-zram-card/zram_collector.php"
     "zram_init.sh:src/unraid-zram-card/zram_init.sh"
     "UnraidZramCard.page:src/unraid-zram-card/UnraidZramCard.page"
     "UnraidZramDash.page:src/unraid-zram-card/UnraidZramDash.page"
@@ -71,9 +76,22 @@ done
 
 chmod +x "$EMHTTP_DEST/zram_status.php"
 chmod +x "$EMHTTP_DEST/zram_swap.php"
+chmod +x "$EMHTTP_DEST/zram_collector.php"
 chmod +x "$EMHTTP_DEST/zram_init.sh"
 
 echo "--- INSTALL COMPLETE ---"
+mkdir -p "/boot/config/plugins/$NAME"
+if [ ! -f "/boot/config/plugins/$NAME/settings.ini" ]; then
+    echo "Creating default configuration..."
+    echo 'enabled="yes"' > "/boot/config/plugins/$NAME/settings.ini"
+    echo 'refresh_interval="3000"' >> "/boot/config/plugins/$NAME/settings.ini"
+    echo 'swappiness="100"' >> "/boot/config/plugins/$NAME/settings.ini"
+    echo 'console_visible="no"' >> "/boot/config/plugins/$NAME/settings.ini"
+    echo 'swap_size="1G"' >> "/boot/config/plugins/$NAME/settings.ini"
+    echo 'compression_algo="zstd"' >> "/boot/config/plugins/$NAME/settings.ini"
+    echo 'zram_devices=""' >> "/boot/config/plugins/$NAME/settings.ini"
+    echo 'debug="no"' >> "/boot/config/plugins/$NAME/settings.ini"
+fi
 rm /tmp/unraid-zram-card-installer
 </INLINE>
 </FILE>
@@ -104,7 +122,7 @@ if [ -f "$PLUGIN_DIR/zram_swap.php" ]; then
 fi
 rm -rf "$PLUGIN_DIR"
 rm -rf "$CONFIG_DIR"
-removepkg "$NAME" &gt; /dev/null 2&gt;&amp;1
+removepkg "$NAME" > /dev/null 2>&amp;1
 if [ -f /usr/local/sbin/update_plugin_cache ]; then
     /usr/local/sbin/update_plugin_cache
 fi
