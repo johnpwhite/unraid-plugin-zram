@@ -1,10 +1,13 @@
 <CHANGES>
-## 2026.01.30.08
-- feat: Persistent Dashboard History (1-hour rolling chart).
-- feat: Background Service maintains history even when the browser is closed.
-- UX: Live Graph seeds with historical data on load for immediate context.
-- UX: Improved CPU Load tracking precision.
-- Fix: Robust Swap Priority labeling (Auto-assigned values).
+## 2026.01.30.21
+- **New Feature: Persistent Dashboard History**. Maintains a 1-hour rolling chart of ZRAM performance even after closing the browser.
+- **New Feature: Unified Diagnostics Console**. Integrated tabbed console for real-time Command History and System Debug Logs.
+- **New Feature: In-Page Debug Viewer**. Live-refreshing log viewer with truncation capabilities, bypassing external window issues.
+- **Improvement: Standardized Logging**. Consistent [LEVEL] prefixes (INFO, DEBUG, WARN, ERROR) across all plugin components.
+- **Improvement: Robust Installer**. Automatic configuration healing on boot to ensure stability after fresh installs or updates.
+- **Improvement: Performance Optimizations**. Enhanced CPU Load tracking and precision for ZRAM metrics.
+- **Fix: Permission Stability**. Standardized world-readable diagnostics logs (0666) for reliable access across web/root users.
+- **Fix: UI Synchronization**. Resolved issues with swappiness and debug toggle states persisting across refreshes.
 
 ## 2026.01.25.66
 - Official Initial Release.
