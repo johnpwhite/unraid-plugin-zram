@@ -237,4 +237,12 @@ elseif ($action === 'remove') {
         echo json_encode(['success' => true, 'message' => "Removed $device", 'logs' => $logs]);
     }
 }
+if ($action === 'clear_log') {
+    if (file_exists($debugLog)) {
+        file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . "DEBUG: Log cleared by user.\n");
+        @chmod($debugLog, 0666);
+    }
+    echo json_encode(['success' => true, 'message' => "Debug log cleared"]);
+    exit;
+}
 ?>

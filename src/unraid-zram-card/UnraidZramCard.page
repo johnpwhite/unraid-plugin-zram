@@ -324,6 +324,7 @@ if (file_exists('/sys/block/zram0/comp_algorithm')) {
         <!-- FOOTER ACTIONS -->
         <div style="background: #222; padding: 5px 15px; border-top: 1px solid #333; display: flex; justify-content: flex-end; gap: 10px;">
             <button type="button" class="zram-btn btn-small" onclick="clearPersistentLogs()" id="btn-clear-cons"><i class="fa fa-trash"></i> CLEAR HISTORY</button>
+            <button type="button" class="zram-btn btn-small btn-remove" onclick="clearDebugLog()" id="btn-clear-debug" style="display:none;"><i class="fa fa-eraser"></i> CLEAR DEBUG LOG</button>
             <button type="button" class="zram-btn btn-small" onclick="fetchDebugLog()" id="btn-refresh-debug" style="display:none;"><i class="fa fa-refresh"></i> REFRESH LOG</button>
         </div>
     </div>
@@ -378,14 +379,23 @@ function switchTab(tab) {
         $('#console-log').show();
         $('#debug-log-view').hide();
         $('#btn-clear-cons').show();
+        $('#btn-clear-debug').hide();
         $('#btn-refresh-debug').hide();
     } else {
         $('#console-log').hide();
         $('#debug-log-view').show();
         $('#btn-clear-cons').hide();
+        $('#btn-clear-debug').show();
         $('#btn-refresh-debug').show();
         fetchDebugLog();
     }
+}
+
+function clearDebugLog() {
+    if (!confirm('Are you sure you want to completely clear the system debug log file?')) return;
+    $.post('/plugins/unraid-zram-card/zram_swap.php', { action: 'clear_log' }, function(data) {
+        fetchDebugLog();
+    });
 }
 
 function fetchDebugLog() {
