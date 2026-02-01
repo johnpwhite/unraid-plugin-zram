@@ -11,7 +11,7 @@ For general Unraid Plugin development workflow (`.plg` XML, Dashboard safety, et
 ---
 
 ## 2. Project Architecture
-*   **GitLab (Private)**: The "Factory". `origin` -> `https://gitlab.johnpwhite.com/johner/unraid-zram-card.git`
+*   **GitLab (Private)**: The "Factory". `origin` -> `https://gitlab.johnpwhite.com/johner/unraid-plg-zram.git`
 *   **GitHub (Public)**: The "Storefront". `public` -> `https://github.com/johnpwhite/unraid-plg-zram.git`
 
 ### Key File Map
