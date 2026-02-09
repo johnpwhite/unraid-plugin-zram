@@ -249,12 +249,10 @@ elseif ($action === 'remove') {
 }
 if ($action === 'clear_log') {
     if (file_exists($debugLog)) {
-        if (@file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . "DEBUG: Log cleared by user.\n") !== false) {
-            @chmod($debugLog, 0666);
-            echo json_encode(['success' => true, 'message' => "Debug log cleared"]);
-        } else {
-            echo json_encode(['success' => false, 'message' => "Failed to write to log file. Check permissions."]);
-        }
+        // Truncate and use standardized zram_log
+        @file_put_contents($debugLog, ""); 
+        zram_log("Log cleared by user.", 'INFO');
+        echo json_encode(['success' => true, 'message' => "Debug log cleared"]);
     } else {
         echo json_encode(['success' => false, 'message' => "Log file not found"]);
     }
