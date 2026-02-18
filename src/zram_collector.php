@@ -9,23 +9,22 @@ if (!is_dir($logDir)) mkdir($logDir, 0777, true);
 $historyFile = "$logDir/history.json";
 $pidFile = "$logDir/collector.pid";
 $maxPoints = 300;
-$interval = 12; // seconds
 $configFile = "/boot/config/plugins/unraid-zram-card/settings.ini";
 $debugLog = "$logDir/debug.log";
 
-// Load Settings for Debug Flag
+// Load Settings
 $settings = @parse_ini_file($configFile);
+$interval = intval($settings['collection_interval'] ?? 3);
+if ($interval < 1) $interval = 3;
 
 function zram_log($msg, $level = 'DEBUG') {
     global $debugLog, $configFile;
-    static $debugFlag = null;
-    if ($debugFlag === null) {
-        $loaded = @parse_ini_file($configFile);
-        $debugFlag = ($loaded['debug'] ?? 'no') === 'yes';
-    }
-
+    
     $level = strtoupper($level);
-    if ($level === 'DEBUG' && !$debugFlag) return;
+    if ($level === 'DEBUG') {
+        $loaded = @parse_ini_file($configFile);
+        if (($loaded['debug'] ?? 'no') !== 'yes') return;
+    }
 
     $logMsg = date('[Y-m-d H:i:s] ') . "[$level] $msg\n";
     @file_put_contents($debugLog, $logMsg, FILE_APPEND);
@@ -73,6 +72,7 @@ while (true) {
 
         // --- 2. Calculate CPU Load ---
         $currentTotalTicks = 0;
+        $stats_out = [];
         exec("cat /sys/block/zram*/stat 2>/dev/null", $stats_out);
         foreach ($stats_out as $line) {
             $stats = preg_split('/\s+/', trim($line));

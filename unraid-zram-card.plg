@@ -1,39 +1,46 @@
 <?xml version='1.0' standalone='yes'?>
-<!DOCTYPE PLUGIN [
-<!ENTITY name      "unraid-zram-card">
-<!ENTITY author    "John White">
-<!ENTITY version   "2026.01.30.22">
-<!ENTITY launch    "Settings/UnraidZramCard">
-<!ENTITY gitURL    "https://github.com/johnpwhite/unraid-plugin-zram/raw/main">
-<!ENTITY pluginURL "https://github.com/johnpwhite/unraid-plugin-zram/raw/main/unraid-zram-card.plg">
-<!ENTITY boot      "/boot/config/plugins/unraid-zram-card">
-<!ENTITY emhttp    "/usr/local/emhttp/plugins/unraid-zram-card">
-]>
-<PLUGIN name="unraid-zram-card" author="John White" version="2026.01.30.22" launch="Settings/UnraidZramCard" pluginURL="https://github.com/johnpwhite/unraid-plugin-zram/raw/main/unraid-zram-card.plg" min="6.12.1" support="https://forums.unraid.net/topic/196763-new-plugin-created-zram/" icon="unraid-zram-card.png">
+
+<PLUGIN name="unraid-zram-card" author="John White" version="2026.02.18.04" launch="Settings/UnraidZramCard" pluginURL="https://github.com/johnpwhite/unraid-plg-zram/raw/main/unraid-zram-card.plg" min="6.12.1" support="https://forums.unraid.net/topic/196763-new-plugin-created-zram/" icon="unraid-zram-card.png">
 
 <CHANGES>
+## 2026.02.18.04
+- Feature: Standardized release labels and improved changelog preservation.
+- Docs: Finalized cumulative changelog and versioning script updates.
+
+## 2026.02.13.13
+- UX: Tightened README layout for better Plugin Manager visibility.
+- Fix: Resolved runaway CPU load calculation in background collector.
+- Feature: Added configurable background collection interval (Default 3s).
+- Feature: Implemented persistent server-side command history.
+- Lifecycle: Improved plugin removal (stops collector and purges all tmp files).
+- Architecture: Flattened source structure and added idempotent initialization.
+- Settings: Diagnostics console now enabled by default on new installs.
+- Bugfix: Resolved background collector logging issues during upgrades.
+- Docs: Added comprehensive Settings and Usage guide for non-technical users.
+
 ## 2026.01.30.21
-- **New Feature: Persistent Dashboard History**. Maintains a 1-hour rolling chart of ZRAM performance even after closing the browser.
-- **New Feature: Unified Diagnostics Console**. Integrated tabbed console for real-time Command History and System Debug Logs.
-- **New Feature: In-Page Debug Viewer**. Live-refreshing log viewer with truncation capabilities, bypassing external window issues.
-- **Improvement: Standardized Logging**. Consistent [LEVEL] prefixes (INFO, DEBUG, WARN, ERROR) across all plugin components.
-- **Improvement: Robust Installer**. Automatic configuration healing on boot to ensure stability after fresh installs or updates.
-- **Improvement: Performance Optimizations**. Enhanced CPU Load tracking and precision for ZRAM metrics.
-- **Fix: Permission Stability**. Standardized world-readable diagnostics logs (0666) for reliable access across web/root users.
-- **Fix: UI Synchronization**. Resolved issues with swappiness and debug toggle states persisting across refreshes.
+- New Feature: Persistent Dashboard History. Maintains a 1-hour rolling chart of ZRAM performance even after closing the browser.
+- New Feature: Unified Diagnostics Console. Integrated tabbed console for real-time Command History and System Debug Logs.
+- New Feature: In-Page Debug Viewer. Live-refreshing log viewer with truncation capabilities, bypassing external window issues.
+- Improvement: Standardized Logging. Consistent [LEVEL] prefixes (INFO, DEBUG, WARN, ERROR) across all plugin components.
+- Improvement: Robust Installer. Automatic configuration healing on boot to ensure stability after fresh installs or updates.
+- Improvement: Performance Optimizations. Enhanced CPU Load tracking and precision for ZRAM metrics.
+- Fix: Permission Stability. Standardized world-readable diagnostics logs (0666) for reliable access across web/root users.
+- Fix: UI Synchronization. Resolved issues with swappiness and debug toggle states persisting across refreshes.
 
 ## 2026.01.25.66
 - Official Initial Release.
 </CHANGES>
 
-<ICON>&gitURL;/src/unraid-zram-card/unraid-zram-card.png</ICON>
+
+<ICON>https://github.com/johnpwhite/unraid-plg-zram/raw/main/src/unraid-zram-card.png</ICON>
 
 <!-- 1. HYBRID INSTALLER SCRIPT -->
 <FILE Run="/bin/bash" Name="/tmp/unraid-zram-card-installer">
 <INLINE>
 #!/bin/bash
 NAME="unraid-zram-card"
-GIT_URL="https://github.com/johnpwhite/unraid-plugin-zram/raw/main"
+GIT_URL="https://github.com/johnpwhite/unraid-plg-zram/raw/main"
 LOCAL_SRC="/boot/config/plugins/$NAME"
 EMHTTP_DEST="/usr/local/emhttp/plugins/$NAME"
 
@@ -42,17 +49,17 @@ rm -rf "$EMHTTP_DEST"
 mkdir -p "$EMHTTP_DEST/js"
 
 FILES=(
-    "ZramCard.php:src/unraid-zram-card/ZramCard.php"
-    "zram_status.php:src/unraid-zram-card/zram_status.php"
-    "zram_swap.php:src/unraid-zram-card/zram_swap.php"
-    "zram_collector.php:src/unraid-zram-card/zram_collector.php"
-    "zram_init.sh:src/unraid-zram-card/zram_init.sh"
-    "UnraidZramCard.page:src/unraid-zram-card/UnraidZramCard.page"
-    "UnraidZramDash.page:src/unraid-zram-card/UnraidZramDash.page"
-    "unraid-zram-card.png:src/unraid-zram-card/unraid-zram-card.png"
-    "README.md:src/unraid-zram-card/README.md"
-    "js/zram-card.js:src/unraid-zram-card/js/zram-card.js"
-    "js/chart.min.js:src/unraid-zram-card/js/chart.min.js"
+    "ZramCard.php:src/ZramCard.php"
+    "zram_status.php:src/zram_status.php"
+    "zram_swap.php:src/zram_swap.php"
+    "zram_collector.php:src/zram_collector.php"
+    "zram_init.sh:src/zram_init.sh"
+    "UnraidZramCard.page:src/UnraidZramCard.page"
+    "UnraidZramDash.page:src/UnraidZramDash.page"
+    "unraid-zram-card.png:src/unraid-zram-card.png"
+    "README.md:src/README.md"
+    "js/zram-card.js:src/js/zram-card.js"
+    "js/chart.min.js:src/js/chart.min.js"
 )
 
 for mapping in "${FILES[@]}"; do
@@ -85,8 +92,9 @@ if [ ! -f "/boot/config/plugins/$NAME/settings.ini" ]; then
     echo "Creating default configuration..."
     echo 'enabled="yes"' > "/boot/config/plugins/$NAME/settings.ini"
     echo 'refresh_interval="3000"' >> "/boot/config/plugins/$NAME/settings.ini"
+    echo 'collection_interval="3"' >> "/boot/config/plugins/$NAME/settings.ini"
     echo 'swappiness="100"' >> "/boot/config/plugins/$NAME/settings.ini"
-    echo 'console_visible="no"' >> "/boot/config/plugins/$NAME/settings.ini"
+    echo 'console_visible="yes"' >> "/boot/config/plugins/$NAME/settings.ini"
     echo 'swap_size="1G"' >> "/boot/config/plugins/$NAME/settings.ini"
     echo 'compression_algo="zstd"' >> "/boot/config/plugins/$NAME/settings.ini"
     echo 'zram_devices=""' >> "/boot/config/plugins/$NAME/settings.ini"
@@ -117,11 +125,17 @@ NAME="unraid-zram-card"
 PLUGIN_DIR="/usr/local/emhttp/plugins/$NAME"
 CONFIG_DIR="/boot/config/plugins/$NAME"
 echo "Removing $NAME..."
+if [ -f "/tmp/$NAME/collector.pid" ]; then
+    PID=$(cat "/tmp/$NAME/collector.pid")
+    echo "Stopping background collector (PID $PID)..."
+    kill $PID 2>/dev/null
+fi
 if [ -f "$PLUGIN_DIR/zram_swap.php" ]; then
     php "$PLUGIN_DIR/zram_swap.php" action=remove > /dev/null 2>&amp;1
 fi
 rm -rf "$PLUGIN_DIR"
 rm -rf "$CONFIG_DIR"
+rm -rf "/tmp/$NAME"
 removepkg "$NAME" > /dev/null 2>&amp;1
 if [ -f /usr/local/sbin/update_plugin_cache ]; then
     /usr/local/sbin/update_plugin_cache

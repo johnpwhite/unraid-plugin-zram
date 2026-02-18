@@ -66,58 +66,58 @@ LOG="$LOG_DIR/boot_init.log"
         echo "No ZRAM devices configured in settings.ini"
         zram_log "No ZRAM devices to initialize." "INFO"
     else
-        zram_log "Initializing ZRAM devices: $ZRAM_DEVICES" "INFO"
-        $MODPROBE zram
-        
-        # Split by comma
-        IFS=',' read -ra ADDR <<< "$ZRAM_DEVICES"
-        for entry in "${ADDR[@]}"; do
-            # Split entry by colon (size:algo:prio)
-            IFS=':' read -r SIZE ALGO PRIO <<< "$entry"
-            if [ -z "$PRIO" ]; then PRIO=100; fi
+        # Idempotency Check: Skip device creation if any zram device is already active
+        if grep -q "/dev/zram" /proc/swaps; then
+            echo "ZRAM devices already active. Skipping creation phase."
+            zram_log "ZRAM devices already active. Skipping creation." "INFO"
+        else
+            zram_log "Initializing ZRAM devices: $ZRAM_DEVICES" "INFO"
+            $MODPROBE zram
             
-            echo "Creating ZRAM device (Size: $SIZE, Algo: $ALGO, Prio: $PRIO)..."
-            zram_log "  > Creating $SIZE ($ALGO) with prio $PRIO" "DEBUG"
-            # Combine find, size, and algo into one call as required by kernel
-            DEV=$($ZRAMCTL --find --size "$SIZE" --algorithm "$ALGO")
-            
-            if [ ! -z "$DEV" ]; then
-                echo "  > Created $DEV. Formatting as swap..."
-                zram_log "  > Formatting $DEV..." "DEBUG"
-                $MKSWAP "$DEV"
-                $SWAPON "$DEV" -p "$PRIO"
-                echo "  > $DEV is now active."
-                zram_log "  > $DEV activated." "INFO"
-            else
-                echo "  > ERROR: Failed to create ZRAM device for size $SIZE"
-                zram_log "  > ERROR: Failed to create $DEV" "ERROR"
-            fi
-        done
+            # Split by comma
+            IFS=',' read -ra ADDR <<< "$ZRAM_DEVICES"
+            for entry in "${ADDR[@]}"; do
+                # Split entry by colon (size:algo:prio)
+                IFS=':' read -r SIZE ALGO PRIO <<< "$entry"
+                if [ -z "$PRIO" ]; then PRIO=100; fi
+                
+                echo "Creating ZRAM device (Size: $SIZE, Algo: $ALGO, Prio: $PRIO)..."
+                zram_log "  > Creating $SIZE ($ALGO) with prio $PRIO" "DEBUG"
+                # Combine find, size, and algo into one call as required by kernel
+                DEV=$($ZRAMCTL --find --size "$SIZE" --algorithm "$ALGO")
+                
+                if [ ! -z "$DEV" ]; then
+                    echo "  > Created $DEV. Formatting as swap..."
+                    zram_log "  > Formatting $DEV..." "DEBUG"
+                    $MKSWAP "$DEV"
+                    $SWAPON "$DEV" -p "$PRIO"
+                    echo "  > $DEV is now active."
+                    zram_log "  > $DEV activated." "INFO"
+                else
+                    echo "  > ERROR: Failed to create ZRAM device for size $SIZE"
+                    zram_log "  > ERROR: Failed to create $DEV" "ERROR"
+                fi
+            done
+        fi
     fi
 
     # --- Launch Background Collector ---
     COLLECTOR="/usr/local/emhttp/plugins/unraid-zram-card/zram_collector.php"
     PIDFILE="/tmp/unraid-zram-card/collector.pid"
     
-    # Check if collector is already running
-    COLLECTOR_RUNNING=0
+    # Always restart collector to ensure newest version is running after upgrade
     if [ -f "$PIDFILE" ]; then
         PID=$(cat "$PIDFILE")
-        if ps -p $PID > /dev/null; then
-            COLLECTOR_RUNNING=1
-        fi
+        echo "Stopping existing collector (PID $PID)..."
+        kill $PID 2>/dev/null
+        sleep 1
     fi
 
-    if [ $COLLECTOR_RUNNING -eq 0 ]; then
-        echo "Starting Background Collector..."
-        # Use nice -n 19 to ensure it has lowest priority
-        nohup nice -n 19 php "$COLLECTOR" > /dev/null 2>&1 &
-        zram_log "Collector launched with PID $!" "INFO"
-        echo "Collector started with PID $!"
-    else
-        echo "Background Collector is already running."
-        zram_log "Collector already running. Skipping launch." "INFO"
-    fi
+    echo "Starting Background Collector..."
+    # Use nice -n 19 to ensure it has lowest priority
+    nohup nice -n 19 php "$COLLECTOR" > /dev/null 2>&1 &
+    zram_log "Collector launched with PID $!" "INFO"
+    echo "Collector started with PID $!"
 
     echo "--- ZRAM BOOT INIT COMPLETE ---"
 } >> "$LOG" 2>&1
