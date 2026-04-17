@@ -45,7 +45,6 @@ if (!function_exists('getZramDashboardCard')) {
                 }
             }
 
-            $memorySaved = max(0, $totalOriginal - $totalUsed);
             $ratio = ($totalCompressed > 0) ? round($totalOriginal / $totalCompressed, 2) : 0;
             $swappiness = trim(@file_get_contents('/proc/sys/vm/swappiness') ?: '60');
 
@@ -76,7 +75,9 @@ if (!function_exists('getZramDashboardCard')) {
             }
 
             $pollInterval = intval($cfg['refresh_interval'] ?? 3000);
-            $version = '2026.04.16';
+            // Cache-buster: filemtime auto-invalidates whenever assets are reinstalled
+            $jsMtime  = @filemtime(__DIR__ . '/js/zram-card.js')  ?: time();
+            $chartMtime = @filemtime(__DIR__ . '/js/chart.min.js') ?: $jsMtime;
 
             // Tier label for subtitle
             $tierLabel = $devCount > 0 ? 'Active' : 'Inactive';
@@ -112,16 +113,16 @@ if (!function_exists('getZramDashboardCard')) {
         <div class="zram-content" style="padding:0 8px;">
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:6px;margin:5px 0 8px;">
                 <div style="background:rgba(0,0,0,0.1);padding:6px;border-radius:4px;text-align:center;">
-                    <span id="zram-saved" style="font-size:1.1em;font-weight:bold;display:block;color:#7fba59;"><?php echo $fmt($memorySaved); ?></span>
-                    <span style="font-size:0.75em;opacity:0.7;">RAM Saved</span>
+                    <span id="zram-uncompressed" style="font-size:1.1em;font-weight:bold;display:block;color:#d49373;"><?php echo $fmt($totalOriginal); ?></span>
+                    <span style="font-size:0.75em;opacity:0.7;">Uncompressed</span>
+                </div>
+                <div style="background:rgba(0,0,0,0.1);padding:6px;border-radius:4px;text-align:center;">
+                    <span id="zram-compressed" style="font-size:1.1em;font-weight:bold;display:block;color:#7fba59;"><?php echo $fmt($totalUsed); ?></span>
+                    <span style="font-size:0.75em;opacity:0.7;">Compressed</span>
                 </div>
                 <div style="background:rgba(0,0,0,0.1);padding:6px;border-radius:4px;text-align:center;">
                     <span id="zram-ratio" style="font-size:1.1em;font-weight:bold;display:block;color:#ffae00;"><?php echo $ratio; ?>x</span>
                     <span style="font-size:0.75em;opacity:0.7;">Ratio</span>
-                </div>
-                <div style="background:rgba(0,0,0,0.1);padding:6px;border-radius:4px;text-align:center;">
-                    <span id="zram-used" style="font-size:1.1em;font-weight:bold;display:block;color:#00a4d8;"><?php echo $fmt($totalUsed); ?></span>
-                    <span style="font-size:0.75em;opacity:0.7;">Actual Used</span>
                 </div>
                 <div style="background:rgba(0,0,0,0.1);padding:6px;border-radius:4px;text-align:center;">
                     <span id="zram-load" style="font-size:1.1em;font-weight:bold;display:block;color:#e57373;">0%</span>
@@ -165,8 +166,8 @@ if (!function_exists('getZramDashboardCard')) {
                 pollInterval: <?php echo $pollInterval; ?>
             };
         </script>
-        <script src="/plugins/unraid-zram-card/js/chart.min.js?v=<?php echo $version; ?>"></script>
-        <script src="/plugins/unraid-zram-card/js/zram-card.js?v=<?php echo $version; ?>"></script>
+        <script src="/plugins/unraid-zram-card/js/chart.min.js?v=<?php echo $chartMtime; ?>"></script>
+        <script src="/plugins/unraid-zram-card/js/zram-card.js?v=<?php echo $jsMtime; ?>"></script>
     </td></tr>
 </tbody>
 <?php
