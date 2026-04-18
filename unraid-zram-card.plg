@@ -1,8 +1,13 @@
 <?xml version='1.0' standalone='yes'?>
 
-<PLUGIN name="unraid-zram-card" author="John White" version="2026.04.17.06" launch="Settings/UnraidZramCard" pluginURL="https://raw.githubusercontent.com/johnpwhite/unraid-plg-zram/main/unraid-zram-card.plg" min="6.12.1" support="https://forums.unraid.net/topic/196763-new-plugin-created-zram/" icon="unraid-zram-card.png">
+<PLUGIN name="unraid-zram-card" author="John White" version="2026.04.18.07" launch="Settings/UnraidZramCard" pluginURL="https://raw.githubusercontent.com/johnpwhite/unraid-plg-zram/main/unraid-zram-card.plg" min="6.12.1" support="https://forums.unraid.net/topic/196763-new-plugin-created-zram/" icon="unraid-zram-card.png">
 
 <CHANGES>
+## 2026.04.18.07
+- Feat: Dashboard graph Y-axis labels now round to the nearest 5 in their natural unit (MB / GB / etc) for easier reading. Stat cards continue to show precise values.
+- Fix: Chart tooltip no longer clips at the bottom of the graph or overflows into adjacent cards when hovering near the edges.
+- Fix: Uninstalling the plugin no longer wipes your saved settings. Refresh interval, compression algorithm, swappiness, and SSD swap configuration now survive uninstall/reinstall per Unraid convention.
+
 ## 2026.04.17.06
 - Feat: Dashboard graph now visualises both uncompressed and compressed memory as stacked filled layers, with CPU load overlaid on top. The visible gap between the two layers is the RAM saved by ZRAM.
 - Feat: Mini stats cards reworked to match the graph: Uncompressed, Compressed, Ratio, Load, Swappiness.
@@ -203,7 +208,10 @@ for zdev in /sys/block/zram*; do
 done
 
 rm -rf "$PLUGIN_DIR"
-rm -rf "$CONFIG_DIR"
+# $CONFIG_DIR (/boot/config/plugins/unraid-zram-card/) is preserved across
+# uninstall per Unraid convention: settings, custom algo choices, SSD-swap
+# config, and the persisted device.conf survive so a later reinstall picks
+# up where the user left off. To fully wipe, delete that dir manually.
 rm -rf "/tmp/$NAME"
 removepkg "$NAME" > /dev/null 2>&amp;1
 if [ -f /usr/local/sbin/update_plugin_cache ]; then
