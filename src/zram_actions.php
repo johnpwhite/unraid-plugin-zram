@@ -13,8 +13,8 @@ require_once dirname(__FILE__) . '/zram_config.php';
 $action = filter_input(INPUT_GET, 'action', FILTER_UNSAFE_RAW) ?: '';
 $csrf   = filter_input(INPUT_GET, 'csrf_token', FILTER_UNSAFE_RAW) ?: '';
 
-// Non-mutating actions: view logs (no CSRF required)
 if ($action === 'view_log') {
+    if (empty($csrf)) { http_response_code(403); header('Content-Type: text/plain; charset=utf-8'); echo "Missing CSRF token\n"; exit; }
     header('Content-Type: text/plain; charset=utf-8');
     header('Cache-Control: no-cache');
     if (file_exists(ZRAM_DEBUG_LOG) && is_readable(ZRAM_DEBUG_LOG)) {
@@ -26,6 +26,7 @@ if ($action === 'view_log') {
 }
 
 if ($action === 'view_cmd_log') {
+    if (empty($csrf)) { http_response_code(403); header('Content-Type: application/json'); echo json_encode([]); exit; }
     header('Content-Type: application/json');
     $entries = [];
     if (file_exists(ZRAM_CMD_LOG)) {
@@ -214,7 +215,7 @@ if ($action === 'remove_ssd_swap') {
     $swapFile = $cfg['ssd_swap_path'] ?? '';
 
     if (empty($swapFile) || !file_exists($swapFile)) {
-        echo json_encode(['success' => false, 'message' => 'No SSD swap file found', 'logs' => $logs]);
+        echo json_encode(['success' => false, 'message' => 'No disk swap file found', 'logs' => $logs]);
         exit;
     }
 
@@ -237,15 +238,15 @@ if ($action === 'remove_ssd_swap') {
         'ssd_swap_mount'   => '',
     ]);
 
-    echo json_encode(['success' => true, 'message' => 'SSD swap file removed', 'logs' => $logs]);
+    echo json_encode(['success' => true, 'message' => 'Disk swap file removed', 'logs' => $logs]);
     exit;
 }
 
 // --- SETTINGS ACTIONS ---
 
 if ($action === 'update_swappiness') {
-    $val = filter_input(INPUT_GET, 'val', FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 100]]);
-    if ($val === false || $val === null) $val = 100;
+    $val = filter_input(INPUT_GET, 'val', FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 200]]);
+    if ($val === false || $val === null) $val = 150;
     zram_run("sysctl vm.swappiness=" . intval($val), $logs);
     zram_config_write(['swappiness' => $val]);
     echo json_encode(['success' => true, 'message' => "Swappiness set to $val", 'logs' => $logs]);

@@ -54,7 +54,10 @@ function loadDrives() {
         var list = document.getElementById('drive-list');
         if (!list) return;
         if (!data.drives || data.drives.length === 0) {
-            list.innerHTML = '<div style="opacity:0.5;font-size:0.9em;padding:8px;">No eligible SSD/NVMe drives found.</div>';
+            var empty = document.createElement('div');
+            empty.style.cssText = 'opacity:0.5;font-size:0.9em;padding:8px;';
+            empty.textContent = 'No eligible drives found. Tier 2 needs a writable mount under /mnt/cache or /mnt/disks (Unassigned Devices).';
+            list.replaceChildren(empty);
             return;
         }
         var html = '';
@@ -111,7 +114,7 @@ function switchTab(tab) {
 function fetchDebugLog() {
     var v = document.getElementById('debug-log-view');
     v.innerText = 'Loading...';
-    $.get(window.ZRAM_PAGE.API + '?action=view_log', function(data) { v.innerText = data; v.scrollTop = v.scrollHeight; });
+    $.get(window.ZRAM_PAGE.API + '?action=view_log&csrf_token=' + encodeURIComponent(window.ZRAM_PAGE.CSRF), function(data) { v.innerText = data; v.scrollTop = v.scrollHeight; });
 }
 
 function clearDebugLog() {
@@ -142,7 +145,7 @@ function addLog(msg, type) {
 }
 
 $(function() {
-    $.get(window.ZRAM_PAGE.API + '?action=view_cmd_log', function(logs) {
+    $.get(window.ZRAM_PAGE.API + '?action=view_cmd_log&csrf_token=' + encodeURIComponent(window.ZRAM_PAGE.CSRF), function(logs) {
         if (!logs || logs.length === 0) addLog('Console ready.');
         else logs.forEach(renderLog);
     });
