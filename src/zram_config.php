@@ -134,11 +134,21 @@ function zram_get_our_device(): string {
     // Without it, a freshly reset zram device can keep returning matches from
     // the cache because zramctl --reset fires no udev change event — that stale
     // window is what made the REMOVE button "stick" across reloads.
-    exec('blkid -c /dev/null -t LABEL=' . escapeshellarg(ZRAM_LABEL) . ' -o device 2>/dev/null', $out);
-    foreach ($out as $line) {
-        $dev = trim($line);
-        if (strpos($dev, '/dev/zram') === 0) {
-            return basename($dev);
+    //
+    // Limit the probe to actual zram devices. Without a device list, blkid scans
+    // every block device on the system to find the label match -- including
+    // unassigned, spun-down disks -- which wakes them just to read their headers
+    // on every Dashboard page load (forums.unraid.net/topic/196763, 2026-08-30).
+    $candidates = glob('/dev/zram*') ?: [];
+    if ($candidates) {
+        $cmd = 'blkid -c /dev/null -t LABEL=' . escapeshellarg(ZRAM_LABEL) . ' -o device '
+             . implode(' ', array_map('escapeshellarg', $candidates)) . ' 2>/dev/null';
+        exec($cmd, $out);
+        foreach ($out as $line) {
+            $dev = trim($line);
+            if (strpos($dev, '/dev/zram') === 0) {
+                return basename($dev);
+            }
         }
     }
     // Fallback: cached device file (written at creation time)
