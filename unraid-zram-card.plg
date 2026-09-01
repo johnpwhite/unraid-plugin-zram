@@ -1,8 +1,10 @@
 <?xml version='1.0' standalone='yes'?>
 
-<PLUGIN name="unraid-zram-card" author="John White" version="2026.08.31.01" launch="Settings/UnraidZramCard" pluginURL="https://raw.githubusercontent.com/johnpwhite/unraid-plg-zram/main/unraid-zram-card.plg" min="6.12.1" support="https://forums.unraid.net/topic/196763-new-plugin-created-zram/" icon="unraid-zram-card.png">
+<PLUGIN name="unraid-zram-card" author="John White" version="2026.09.01.01" launch="Settings/UnraidZramCard" pluginURL="https://raw.githubusercontent.com/johnpwhite/unraid-plg-zram/main/unraid-zram-card.plg" min="6.12.1" support="https://forums.unraid.net/topic/196763-new-plugin-created-zram/" icon="unraid-zram-card.png">
 
 <CHANGES>
+## 2026.09.01.01
+- Fix: Plugin updates and reinstalls now actually pick up new releases. Previously, once the plugin's files were first cached to your flash drive, clicking "Check for Updates" or reinstalling could silently keep running that very first version forever, even after installing what looked like a newer release. Every update now downloads and installs the new version correctly.
 ## 2026.08.31.01
 - Fix: The Dashboard tile no longer wakes unrelated spun-down disks when it checks its own ZRAM status.
 ## 2026.08.07.01
@@ -127,14 +129,20 @@
 <ICON>https://raw.githubusercontent.com/johnpwhite/unraid-plg-zram/main/src/unraid-zram-card.png</ICON>
 
 <!-- 1. FETCH SOURCE BUNDLE -->
-<!-- Cached to flash. Unraid's native FILE/URL downloader only checks whether
-     this target already exists — it skips re-fetching it if so — so this
-     download only happens on a fresh install or an explicit user-triggered
-     update (network is known to be reachable then). It is NOT re-fetched by
-     the silent boot-time reinstall that repopulates /usr/local/emhttp (tmpfs)
-     on every boot, which is what makes the installer below safe to re-run
-     with no network dependency. See docs/specs/BOOT_INSTALL_NETWORK_INDEPENDENCE.md. -->
-<FILE Name="/boot/config/plugins/unraid-zram-card/src.tar.gz">
+<!-- Cached to flash, keyed by version. Unraid's native FILE/URL downloader
+     only checks whether this target already exists — it skips re-fetching
+     it if so — and that check applies to EVERY invocation, not just the
+     silent boot-time reinstall that repopulates /usr/local/emhttp (tmpfs) on
+     every boot. Putting 2026.09.01.01 in the cached path means each version
+     bump gets its own cache slot: a user-triggered update or reinstall onto
+     a NEW version always downloads (that path has never existed on this
+     flash before), while the silent boot-time reinstall of an
+     already-installed version resolves to the same already-cached path
+     — no network call. A fixed filename here previously meant "Check for
+     Updates" and "reinstall" both silently kept the FIRST version's
+     tarball forever (forum report, raphael_, 2026-08-31).
+     See docs/specs/PLUGIN_CACHE_VERSION_REFRESH.md. -->
+<FILE Name="/boot/config/plugins/unraid-zram-card/src-2026.09.01.01.tar.gz">
 <URL>https://raw.githubusercontent.com/johnpwhite/unraid-plg-zram/main/src.tar.gz</URL>
 </FILE>
 
@@ -143,9 +151,10 @@
 <INLINE>
 #!/bin/bash
 NAME="unraid-zram-card"
+VERSION="2026.09.01.01"
 LOCAL_SRC="/boot/config/plugins/$NAME"
 EMHTTP_DEST="/usr/local/emhttp/plugins/$NAME"
-ARCHIVE="$LOCAL_SRC/src.tar.gz"
+ARCHIVE="$LOCAL_SRC/src-$VERSION.tar.gz"
 
 # Unraid may reuse a named inline FILE left in /tmp by a previous failed
 # install. Always remove this installer on exit so upgrades execute the script
@@ -263,6 +272,13 @@ if [ -n "$EMPTY" ]; then
     echo "$EMPTY"
     exit 1
 fi
+
+
+# Drop cached tarballs from older versions now that this version has
+# installed successfully — keeps $LOCAL_SRC from accumulating one archive
+# per historical update. Only runs on the success path, so a failed/corrupt
+# download never deletes the last known-good cached archive.
+find "$LOCAL_SRC" -maxdepth 1 -name 'src-*.tar.gz' ! -name "src-$VERSION.tar.gz" -delete 2>/dev/null || true
 
 echo "--- INSTALL COMPLETE ---"
 mkdir -p "/boot/config/plugins/$NAME"
