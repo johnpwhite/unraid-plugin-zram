@@ -1,8 +1,11 @@
 <?xml version='1.0' standalone='yes'?>
 
-<PLUGIN name="unraid-zram-card" author="John White" version="2026.09.01.01" launch="Settings/UnraidZramCard" pluginURL="https://raw.githubusercontent.com/johnpwhite/unraid-plg-zram/main/unraid-zram-card.plg" min="6.12.1" support="https://forums.unraid.net/topic/196763-new-plugin-created-zram/" icon="unraid-zram-card.png">
+<PLUGIN name="unraid-zram-card" author="John White" version="2026.09.06.01" launch="Settings/UnraidZramCard" pluginURL="https://raw.githubusercontent.com/johnpwhite/unraid-plg-zram/main/unraid-zram-card.plg" min="6.12.1" support="https://forums.unraid.net/topic/196763-new-plugin-created-zram/" icon="unraid-zram-card.png">
 
 <CHANGES>
+## 2026.09.06.01
+- Fix: The dashboard now reports the true amount of RAM your ZRAM device occupies. The status data behind the dashboard could read the wrong column from zramctl and report 0 bytes used for a busy device, which flattened the graph and overstated the memory savings shown.
+- Improve: A flat graph can now be diagnosed. The plugin's log (/tmp/unraid-zram-card/debug.log) now records why a reading is zero: the device is healthy but idle (normal after a reboot), the plugin's device is missing or stale, or zramctl failed. Byte counts are logged exactly instead of rounded to whole MB, and a failed read no longer draws a false flat line. Tier 2-only setups keep their Disk chart. Reported on the forum by The_Holocron on the Unraid 7.4 beta.
 ## 2026.09.01.01
 - Fix: Plugin updates and reinstalls now actually pick up new releases. Previously, once the plugin's files were first cached to your flash drive, clicking "Check for Updates" or reinstalling could silently keep running that very first version forever, even after installing what looked like a newer release. Every update now downloads and installs the new version correctly.
 ## 2026.08.31.01
@@ -133,7 +136,7 @@
      only checks whether this target already exists — it skips re-fetching
      it if so — and that check applies to EVERY invocation, not just the
      silent boot-time reinstall that repopulates /usr/local/emhttp (tmpfs) on
-     every boot. Putting 2026.09.01.01 in the cached path means each version
+     every boot. Putting 2026.09.06.01 in the cached path means each version
      bump gets its own cache slot: a user-triggered update or reinstall onto
      a NEW version always downloads (that path has never existed on this
      flash before), while the silent boot-time reinstall of an
@@ -142,7 +145,7 @@
      Updates" and "reinstall" both silently kept the FIRST version's
      tarball forever (forum report, raphael_, 2026-08-31).
      See docs/specs/PLUGIN_CACHE_VERSION_REFRESH.md. -->
-<FILE Name="/boot/config/plugins/unraid-zram-card/src-2026.09.01.01.tar.gz">
+<FILE Name="/boot/config/plugins/unraid-zram-card/src-2026.09.06.01.tar.gz">
 <URL>https://raw.githubusercontent.com/johnpwhite/unraid-plg-zram/main/src.tar.gz</URL>
 </FILE>
 
@@ -151,7 +154,7 @@
 <INLINE>
 #!/bin/bash
 NAME="unraid-zram-card"
-VERSION="2026.09.01.01"
+VERSION="2026.09.06.01"
 LOCAL_SRC="/boot/config/plugins/$NAME"
 EMHTTP_DEST="/usr/local/emhttp/plugins/$NAME"
 ARCHIVE="$LOCAL_SRC/src-$VERSION.tar.gz"

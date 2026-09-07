@@ -125,6 +125,43 @@ function zram_run(string $cmd, array &$logs): int {
     return $ret;
 }
 
+/** Resolve an Unraid system binary without relying on the web-server PATH. */
+function zram_find_binary(string $name): string {
+    if (!preg_match('/^[a-z0-9_-]+$/i', $name)) return '';
+
+    foreach (["/sbin/$name", "/usr/sbin/$name"] as $candidate) {
+        if (is_file($candidate) && is_executable($candidate)) return $candidate;
+    }
+
+    return '';
+}
+
+/**
+ * Parse the fixed column contract requested by zram_status.php.
+ *
+ * Do not use --output-all here: optional empty columns (notably STREAMS) are
+ * collapsed by whitespace splitting and shift TOTAL onto the wrong index.
+ *
+ * @return array{name:string,disksize:int,data:int,compr:int,algorithm:string,total:int}|null
+ */
+function zram_parse_status_row(string $line): ?array {
+    $parts = preg_split('/\s+/', trim($line));
+    if (!is_array($parts) || count($parts) !== 6) return null;
+
+    foreach ([1, 2, 3, 5] as $index) {
+        if (preg_match('/^\d+$/D', $parts[$index]) !== 1) return null;
+    }
+
+    return [
+        'name'      => $parts[0],
+        'disksize'  => intval($parts[1]),
+        'data'      => intval($parts[2]),
+        'compr'     => intval($parts[3]),
+        'algorithm' => $parts[4],
+        'total'     => intval($parts[5]),
+    ];
+}
+
 /**
  * Get our labeled ZRAM device name (e.g., "zram1") or empty string.
  * Checks blkid for ZRAM_CARD label, falls back to device.conf cache.

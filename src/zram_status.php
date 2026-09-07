@@ -19,43 +19,47 @@ $totalOriginal = 0;
 $totalCompressed = 0;
 $totalUsed = 0;
 $diskSize = 0;
+$swapon = zram_find_binary('swapon');
 
 if ($ourDev) {
-    // Get device details via zramctl
+    // Request only the fields we consume. `--output-all` is unsafe to parse
+    // positionally because an empty optional STREAMS field is collapsed by
+    // whitespace splitting and shifts TOTAL onto the MEM-LIMIT position.
     $out = [];
-    exec('zramctl --output-all --bytes --json 2>/dev/null', $out, $ret);
     $devices = [];
-    if ($ret === 0 && !empty($out)) {
-        $parsed = json_decode(implode("\n", $out), true);
-        $devices = $parsed['zramctl'] ?? [];
+    $zramctl = zram_find_binary('zramctl');
+    if ($zramctl !== '') {
+        $command = escapeshellarg($zramctl)
+            . ' --bytes --noheadings --raw --output NAME,DISKSIZE,DATA,COMPR,ALGORITHM,TOTAL '
+            . escapeshellarg("/dev/$ourDev") . ' 2>/dev/null';
+        exec($command, $out, $ret);
     } else {
-        unset($out);
-        $out = [];
-        exec('zramctl --output-all --bytes --noheadings --raw 2>/dev/null', $out);
+        $ret = 127;
+    }
+
+    if ($ret === 0) {
         foreach ($out as $line) {
-            $p = preg_split('/\s+/', trim($line));
-            if (count($p) >= 8) {
-                $devices[] = [
-                    'name' => $p[0], 'disksize' => $p[1], 'data' => $p[2],
-                    'compr' => $p[3], 'algorithm' => $p[4], 'total' => $p[7],
-                ];
-            }
+            $device = zram_parse_status_row($line);
+            if ($device !== null) $devices[] = $device;
         }
     }
 
     // Find our device
     foreach ($devices as $d) {
-        $name = basename($d['name'] ?? '');
+        $name = basename($d['name']);
         if ($name === $ourDev) {
             $zramDevice = $d;
-            $totalOriginal = intval($d['data'] ?? 0);
-            $totalCompressed = intval($d['compr'] ?? 0);
-            $totalUsed = intval($d['total'] ?? 0);
-            $diskSize = intval($d['disksize'] ?? 0);
+            $totalOriginal = $d['data'];
+            $totalCompressed = $d['compr'];
+            $totalUsed = $d['total'];
+            $diskSize = $d['disksize'];
 
             // Enrich with priority
             $prio = '100';
-            exec('swapon --noheadings --show=NAME,PRIO 2>/dev/null', $sw_out);
+            $sw_out = [];
+            if ($swapon !== '') {
+                exec(escapeshellarg($swapon) . ' --noheadings --show=NAME,PRIO 2>/dev/null', $sw_out);
+            }
             foreach ($sw_out as $sl) {
                 $sp = preg_split('/\s+/', trim($sl));
                 if (count($sp) >= 2 && basename($sp[0]) === $ourDev) {
@@ -105,7 +109,10 @@ if ($ssdPath) {
         }
     }
 
-    exec('swapon --bytes --noheadings --show=NAME,SIZE,USED,PRIO 2>/dev/null', $ssd_out);
+    $ssd_out = [];
+    if ($swapon !== '') {
+        exec(escapeshellarg($swapon) . ' --bytes --noheadings --show=NAME,SIZE,USED,PRIO 2>/dev/null', $ssd_out);
+    }
     foreach ($ssd_out as $line) {
         $p = preg_split('/\s+/', trim($line));
         if (count($p) >= 4 && $p[0] === $swapTarget) {
