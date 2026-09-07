@@ -147,6 +147,7 @@
      See docs/specs/PLUGIN_CACHE_VERSION_REFRESH.md. -->
 <FILE Name="/boot/config/plugins/unraid-zram-card/src-2026.09.06.01.tar.gz">
 <URL>https://raw.githubusercontent.com/johnpwhite/unraid-plg-zram/main/src.tar.gz</URL>
+<SHA256>21588c5e847bcafdaed1f538c64e3bc3fedf319d18fbe0d481f162458b77f65e</SHA256>
 </FILE>
 
 <!-- 2. HYBRID INSTALLER SCRIPT -->
